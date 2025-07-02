@@ -7,7 +7,8 @@ const serviceTypes = {
     'Oil seal replacement', 'Belt replacement', 'Water pump replacement',
     'Thermostat replacement', 'Coolant hose replacement', 'Drive pulley replacement',
     'Engine mount replacement', 'Spark plug replacement', 'Fuel injector repair',
-    'Fuel injector replacement', 'Throttle body repair'
+    'Fuel injector replacement', 'Throttle body repair', 'Ignition coil replacement',
+    'Fuel pump replacement', 'Timing belt replacement', 'Timing chain replacement'
   ],
   chassis: [
     'Shock absorber replacement', 'Lower arm replacement', 'Rack end replacement',
@@ -28,13 +29,32 @@ function RegistrationForm({ appId, userId, db }) {
     driveMode: '',
     engineServices: serviceTypes.engine.map(type => ({ type, done: false, urgent: false, later: false })),
     chassisServices: serviceTypes.chassis.map(type => ({ type, done: false, urgent: false, later: false })),
+    // NEW: State for brake percentages
+    brakePercentages: {
+      frontLeft: '',
+      frontRight: '',
+      rearLeft: '',
+      rearRight: ''
+    }
   });
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    // Handle nested state for brake percentages
+    if (name.startsWith('brakePercentages.')) {
+      const brakeField = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        brakePercentages: {
+          ...prev.brakePercentages,
+          [brakeField]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleRadioChange = (e) => {
@@ -72,6 +92,7 @@ function RegistrationForm({ appId, userId, db }) {
       });
       setMessage('Service registration successful! Document ID: ' + docRef.id);
       setMessageType('success');
+      // Reset form data after successful submission
       setFormData({
         regNumber: '',
         kilometers: '',
@@ -83,6 +104,12 @@ function RegistrationForm({ appId, userId, db }) {
         driveMode: '',
         engineServices: serviceTypes.engine.map(type => ({ type, done: false, urgent: false, later: false })),
         chassisServices: serviceTypes.chassis.map(type => ({ type, done: false, urgent: false, later: false })),
+        brakePercentages: { // Reset brake percentages
+          frontLeft: '',
+          frontRight: '',
+          rearLeft: '',
+          rearRight: ''
+        }
       });
     } catch (e) {
       console.error("Error adding document: ", e);
@@ -142,7 +169,7 @@ function RegistrationForm({ appId, userId, db }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Vehicle Service Registration Form</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Vehicle Inspection Report</h2>
 
       {message && (
         <div className={`p-3 rounded-lg text-white ${messageType === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
@@ -366,8 +393,94 @@ function RegistrationForm({ appId, userId, db }) {
         </div>
       </fieldset>
 
+      
+
       {renderServiceTable('engineServices', formData.engineServices)}
       {renderServiceTable('chassisServices', formData.chassisServices)}
+
+      {/* NEW: Brake Percentages Table */}
+      <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
+        <legend className="text-lg font-semibold text-gray-700 px-2">Brake Percentages</legend>
+        <div className="overflow-x-auto mt-4">
+          <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+            <thead>
+              <tr className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+                <th className="py-3 px-6 text-left"></th>
+                <th className="py-3 px-6 text-center">Left</th>
+                <th className="py-3 px-6 text-center">Right</th>
+              </tr>
+            </thead>
+            <tbody className="text-gray-600 text-sm font-light">
+              <tr className="border-b border-gray-200 hover:bg-gray-50">
+                <td className="py-3 px-6 text-left whitespace-nowrap font-medium">Front</td>
+                <td className="py-3 px-6 text-center">
+                  <div className="flex items-center justify-center">
+                    <input
+                      type="number"
+                      name="brakePercentages.frontLeft"
+                      value={formData.brakePercentages.frontLeft}
+                      onChange={handleChange}
+                      className="w-24 p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center"
+                      min="0"
+                      max="100"
+                      placeholder="%"
+                    />
+                    <span className="ml-2 text-gray-700">%</span>
+                  </div>
+                </td>
+                <td className="py-3 px-6 text-center">
+                  <div className="flex items-center justify-center">
+                    <input
+                      type="number"
+                      name="brakePercentages.frontRight"
+                      value={formData.brakePercentages.frontRight}
+                      onChange={handleChange}
+                      className="w-24 p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center"
+                      min="0"
+                      max="100"
+                      placeholder="%"
+                    />
+                    <span className="ml-2 text-gray-700">%</span>
+                  </div>
+                </td>
+              </tr>
+              <tr className="border-b border-gray-200 hover:bg-gray-50">
+                <td className="py-3 px-6 text-left whitespace-nowrap font-medium">Rear</td>
+                <td className="py-3 px-6 text-center">
+                  <div className="flex items-center justify-center">
+                    <input
+                      type="number"
+                      name="brakePercentages.rearLeft"
+                      value={formData.brakePercentages.rearLeft}
+                      onChange={handleChange}
+                      className="w-24 p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center"
+                      min="0"
+                      max="100"
+                      placeholder="%"
+                    />
+                    <span className="ml-2 text-gray-700">%</span>
+                  </div>
+                </td>
+                <td className="py-3 px-6 text-center">
+                  <div className="flex items-center justify-center">
+                    <input
+                      type="number"
+                      name="brakePercentages.rearRight"
+                      value={formData.brakePercentages.rearRight}
+                      onChange={handleChange}
+                      className="w-24 p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center"
+                      min="0"
+                      max="100"
+                      placeholder="%"
+                    />
+                    <span className="ml-2 text-gray-700">%</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </fieldset>
 
       <button
         type="submit"
@@ -379,5 +492,4 @@ function RegistrationForm({ appId, userId, db }) {
   );
 }
 
-// Add this line to export the component as a default export
 export default RegistrationForm;

@@ -1,6 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
+// UPDATED: serviceTypes to match the RegistrationForm
+const serviceTypes = {
+  engine: [
+    'Oil change', 'Oil filter change', 'Air filter change', 'AC filter change',
+    'Oil seal replacement', 'Belt replacement', 'Water pump replacement',
+    'Thermostat replacement', 'Coolant hose replacement', 'Drive pulley replacement',
+    'Engine mount replacement', 'Spark plug replacement', 'Fuel injector repair',
+    'Fuel injector replacement', 'Throttle body repair', 'Ignition coil replacement',
+    'Fuel pump replacement', 'Timing belt replacement', 'Timing chain replacement'
+  ],
+  chassis: [
+    'Shock absorber replacement', 'Lower arm replacement', 'Rack end replacement',
+    'Ball joint replacement', 'Front brake repair', 'Front brake replacement',
+    'Rear brake repair', 'Rear brake replacement'
+  ]
+};
+
 // RecordsList Component
 function RecordsList({ appId, userId, db }) {
   const [records, setRecords] = useState([]);
@@ -10,21 +27,6 @@ function RecordsList({ appId, userId, db }) {
   const [editFormData, setEditFormData] = useState({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState(null);
-
-  const serviceTypes = {
-    engine: [
-      'Oil change', 'Oil filter change', 'Air filter change', 'AC filter change',
-      'Oil seal replacement', 'Belt replacement', 'Water pump replacement',
-      'Thermostat replacement', 'Coolant hose replacement', 'Drive pulley replacement',
-      'Engine mount replacement', 'Spark plug replacement', 'Fuel injector repair',
-      'Fuel injector replacement', 'Throttle body repair'
-    ],
-    chassis: [
-      'Shock absorber replacement', 'Lower arm replacement', 'Rack end replacement',
-      'Ball joint replacement', 'Front brake repair', 'Front brake replacement',
-      'Rear brake repair', 'Rear brake replacement'
-    ]
-  };
 
   useEffect(() => {
     if (!userId || !db) {
@@ -39,7 +41,13 @@ function RecordsList({ appId, userId, db }) {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedRecords = [];
       snapshot.forEach((doc) => {
-        fetchedRecords.push({ id: doc.id, ...doc.data() });
+        // Ensure brakePercentages are initialized if missing in old records
+        const data = doc.data();
+        fetchedRecords.push({
+          id: doc.id,
+          ...data,
+          brakePercentages: data.brakePercentages || { frontLeft: '', frontRight: '', rearLeft: '', rearRight: '' }
+        });
       });
 
       fetchedRecords.sort((a, b) => {
@@ -53,6 +61,7 @@ function RecordsList({ appId, userId, db }) {
     }, (err) => {
       console.error("Error fetching records:", err);
       setError("Failed to load records. " + err.message);
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -63,7 +72,9 @@ function RecordsList({ appId, userId, db }) {
     setEditFormData({
       ...record,
       engineServices: record.engineServices ? record.engineServices.map(s => ({ ...s })) : [],
-      chassisServices: record.chassisServices ? record.chassisServices.map(s => ({ ...s })) : []
+      chassisServices: record.chassisServices ? record.chassisServices.map(s => ({ ...s })) : [],
+      // NEW: Copy brakePercentages to edit form data
+      brakePercentages: { ...record.brakePercentages }
     });
   };
 
@@ -91,7 +102,19 @@ function RecordsList({ appId, userId, db }) {
 
   const handleEditFormChange = (e) => {
     const { name, value } = e.target;
-    setEditFormData(prev => ({ ...prev, [name]: value }));
+    // Handle nested state for brake percentages
+    if (name.startsWith('brakePercentages.')) {
+      const brakeField = name.split('.')[1];
+      setEditFormData(prev => ({
+        ...prev,
+        brakePercentages: {
+          ...prev.brakePercentages,
+          [brakeField]: value
+        }
+      }));
+    } else {
+      setEditFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleEditServiceChange = (category, index, field) => {
@@ -170,77 +193,83 @@ function RecordsList({ appId, userId, db }) {
       <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Vehicle Service Registration Form</title>
+          <title>Vehicle Inspection Report</title>
           <style>
-              body { font-family: 'Inter', sans-serif; margin: 15mm; font-size: 10pt; color: #333; }
-              table { width: 100%; border-collapse: collapse; margin-bottom: 10mm; }
-              th, td { border: 1px solid #000; padding: 5px 8px; text-align: left; }
+              body { font-family: 'Inter', sans-serif; margin: 10mm; font-size: 9pt; color: #333; } /* Reduced margin and font size */
+              table { width: 100%; border-collapse: collapse; margin-bottom: 5mm; } /* Reduced margin-bottom */
+              th, td { border: 1px solid #000; padding: 3px 5px; text-align: left; font-size: 8.5pt; } /* Reduced padding and font size */
               th { background-color: #f0f0f0; font-weight: bold; }
-              .header-title { font-size: 14pt; font-weight: bold; text-align: center; margin-bottom: 15px; }
-              .date-box { float: right; border: 1px solid #000; padding: 5px; width: 120px; text-align: center; }
-              .section-title { font-size: 12pt; font-weight: bold; margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid #000; padding-bottom: 3px; }
-              .info-table td:first-child { font-weight: bold; width: 100px; }
-              .checkbox-cell { text-align: center; width: 40px; }
-              .service-type { width: 150px; }
-              .radio-option { display: inline-block; margin-right: 10px; }
+              .header-title { font-size: 13pt; font-weight: bold; text-align: center; margin-bottom: 10px; } /* Reduced font size and margin */
+              .date-box { float: right; border: 1px solid #000; padding: 3px; width: 100px; text-align: center; font-size: 8.5pt; } /* Reduced padding, width, and font size */
+              .section-title { font-size: 11pt; font-weight: bold; margin-top: 10px; margin-bottom: 3px; border-bottom: 1px solid #000; padding-bottom: 2px; } /* Reduced font size, margins, and padding */
+              .info-table td:first-child { font-weight: bold; width: 90px; } /* Adjusted width */
+              .checkbox-cell { text-align: center; width: 35px; } /* Adjusted width */
+              .service-type { width: 140px; } /* Adjusted width */
+              .radio-option { display: inline-block; margin-right: 8px; } /* Reduced margin */
 
               /* Custom Checkbox Styling for Print using div */
               .checkbox-square {
-                width: 16px;
-                height: 16px;
+                width: 14px; /* Slightly smaller */
+                height: 14px; /* Slightly smaller */
                 border: 1px solid #000;
                 display: inline-block;
                 position: relative;
-                margin: auto; /* Center the square in the cell */
+                margin: auto;
               }
               .checkbox-square.checked::after {
-                content: "✔"; /* Checkmark symbol */
-                color: #000; /* Black checkmark */
-                font-size: 14px;
+                content: "✔";
+                color: #000;
+                font-size: 12px; /* Adjusted size */
                 position: absolute;
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
               }
 
-              /* UPDATED: Custom Radio Button Styling for Print using div with visible content */
+              /* Custom Radio Button Styling for Print using div with visible content */
               .radio-circle {
-                  width: 16px;
-                  height: 16px;
+                  width: 14px; /* Slightly smaller */
+                  height: 14px; /* Slightly smaller */
                   border: 1px solid #000;
-                  border-radius: 50%; /* Make it circular */
+                  border-radius: 50%;
                   display: inline-block;
                   position: relative;
                   vertical-align: middle;
-                  margin-right: 5px;
+                  margin-right: 4px; /* Reduced margin */
               }
               .radio-circle.checked::after {
-                  content: '●'; /* Use black circle unicode character */
-                  font-size: 10px; /* Adjust size of the bullet */
-                  color: #000; /* Black inner circle */
+                  content: '●';
+                  font-size: 9px; /* Adjusted size */
+                  color: #000;
                   position: absolute;
                   top: 50%;
                   left: 50%;
                   transform: translate(-50%, -50%);
-                  line-height: 1; /* Ensure proper vertical alignment of the bullet */
+                  line-height: 1;
               }
+              /* NEW: Right align brake percentage values */
+              .brake-percentage-cell {
+                  text-align: right;
+              }
+
 
               /* Hide actual form controls in print to avoid conflicts */
               @media print {
                   input[type="checkbox"], input[type="radio"] {
                       display: none;
                   }
-                  body { margin: 10mm; }
-                  @page { size: A4; margin: 10mm; }
-                  .header-title { margin-bottom: 10px; }
+                  body { margin: 8mm; } /* Further reduced margin for print */
+                  @page { size: A4; margin: 8mm; } /* Further reduced page margin */
+                  .header-title { margin-bottom: 8px; }
                   .date-box { margin-top: 0; }
-                  .flex-container { display: flex; justify-content: space-between; gap: 5mm; }
+                  .flex-container { display: flex; justify-content: space-between; gap: 3mm; } /* Reduced gap */
+                  .flex-item { flex: 1; min-width: 0; } /* Ensure flex items can shrink */
               }
           </style>
       </head>
       <body>
           <div style="overflow: hidden;">
-              <div class="header-title" style="float: left; width: calc(100% - 130px);">Vehicle Service Registration Form</div>
+              <div class="header-title" style="float: left; width: calc(100% - 110px);">Vehicle Inspection Report</div>
               <div class="date-box">Date: ${formatDate(record.timestamp)}</div>
           </div>
           <div style="clear: both;"></div>
@@ -321,6 +350,29 @@ function RecordsList({ appId, userId, db }) {
                   </table>
               </div>
           </div>
+
+          <div class="section-title">Brake Percentages</div>
+          <table>
+              <thead>
+                  <tr>
+                      <th></th>
+                      <th class="brake-percentage-cell">Left</th>
+                      <th class="brake-percentage-cell">Right</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  <tr>
+                      <td>Front</td>
+                      <td class="brake-percentage-cell">${record.brakePercentages.frontLeft || ''}%</td>
+                      <td class="brake-percentage-cell">${record.brakePercentages.frontRight || ''}%</td>
+                  </tr>
+                  <tr>
+                      <td>Rear</td>
+                      <td class="brake-percentage-cell">${record.brakePercentages.rearLeft || ''}%</td>
+                      <td class="brake-percentage-cell">${record.brakePercentages.rearRight || ''}%</td>
+                  </tr>
+              </tbody>
+          </table>
       </body>
       </html>
     `;
@@ -340,7 +392,9 @@ function RecordsList({ appId, userId, db }) {
 
     const headers = [
       "Reg Number", "Brand", "Model", "Year", "Kilometers", "Gearbox",
-      "Motive Power", "Drive Mode", "Engine Services", "Chassis Services", "Registered On"
+      "Motive Power", "Drive Mode",
+      "Brake Front Left (%)", "Brake Front Right (%)", "Brake Rear Left (%)", "Brake Rear Right (%)",
+      "Engine Services", "Chassis Services", "Registered On"
     ];
 
     const csvRows = [];
@@ -368,6 +422,10 @@ function RecordsList({ appId, userId, db }) {
         record.gearbox,
         record.motivePower,
         record.driveMode,
+        record.brakePercentages.frontLeft || '', // New brake percentages
+        record.brakePercentages.frontRight || '',
+        record.brakePercentages.rearLeft || '',
+        record.brakePercentages.rearRight || '',
         formatServicesForCsv(record.engineServices),
         formatServicesForCsv(record.chassisServices),
         `"${record.timestamp?.toDate ? record.timestamp.toDate().toLocaleString() : 'N/A'}"`
@@ -464,6 +522,7 @@ function RecordsList({ appId, userId, db }) {
               <th className="py-3 px-6 text-left">Gearbox</th>
               <th className="py-3 px-6 text-left">Motive Power</th>
               <th className="py-3 px-6 text-left">Drive Mode</th>
+              <th className="py-3 px-6 text-left min-w-[150px]">Brake Percentages</th> {/* NEW HEADER */}
               <th className="py-3 px-6 text-left min-w-[250px]">Engine Services</th>
               <th className="py-3 px-6 text-left min-w-[250px]">Chassis Services</th>
               <th className="py-3 px-6 text-left">Registered On</th>
@@ -596,6 +655,68 @@ function RecordsList({ appId, userId, db }) {
                     record.driveMode
                   )}
                 </td>
+                {/* NEW: Brake Percentages */}
+                <td className="py-3 px-6 text-left">
+                  {editingRecordId === record.id ? (
+                    <div className="flex flex-col space-y-1 text-center">
+                      <div className="flex items-center justify-center">
+                        <span className="text-xs font-medium mr-1">FL:</span>
+                        <input
+                          type="number"
+                          name="brakePercentages.frontLeft"
+                          value={editFormData.brakePercentages.frontLeft || ''}
+                          onChange={handleEditFormChange}
+                          className="w-16 p-1 border border-gray-300 rounded-md text-center text-xs"
+                          min="0" max="100" placeholder="%"
+                        />
+                        <span className="ml-1 text-xs">%</span>
+                      </div>
+                      <div className="flex items-center justify-center">
+                        <span className="text-xs font-medium mr-1">FR:</span>
+                        <input
+                          type="number"
+                          name="brakePercentages.frontRight"
+                          value={editFormData.brakePercentages.frontRight || ''}
+                          onChange={handleEditFormChange}
+                          className="w-16 p-1 border border-gray-300 rounded-md text-center text-xs"
+                          min="0" max="100" placeholder="%"
+                        />
+                        <span className="ml-1 text-xs">%</span>
+                      </div>
+                      <div className="flex items-center justify-center">
+                        <span className="text-xs font-medium mr-1">RL:</span>
+                        <input
+                          type="number"
+                          name="brakePercentages.rearLeft"
+                          value={editFormData.brakePercentages.rearLeft || ''}
+                          onChange={handleEditFormChange}
+                          className="w-16 p-1 border border-gray-300 rounded-md text-center text-xs"
+                          min="0" max="100" placeholder="%"
+                        />
+                        <span className="ml-1 text-xs">%</span>
+                      </div>
+                      <div className="flex items-center justify-center">
+                        <span className="text-xs font-medium mr-1">RR:</span>
+                        <input
+                          type="number"
+                          name="brakePercentages.rearRight"
+                          value={editFormData.brakePercentages.rearRight || ''}
+                          onChange={handleEditFormChange}
+                          className="w-16 p-1 border border-gray-300 rounded-md text-center text-xs"
+                          min="0" max="100" placeholder="%"
+                        />
+                        <span className="ml-1 text-xs">%</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs">
+                      <p>Front Left: {record.brakePercentages?.frontLeft || 'N/A'}%</p>
+                      <p>Front Right: {record.brakePercentages?.frontRight || 'N/A'}%</p>
+                      <p>Rear Left: {record.brakePercentages?.rearLeft || 'N/A'}%</p>
+                      <p>Rear Right: {record.brakePercentages?.rearRight || 'N/A'}%</p>
+                    </div>
+                  )}
+                </td>
                 {/* Engine Services (now editable with checkboxes) */}
                 <td className="py-3 px-6 text-left">
                   {editingRecordId === record.id ? (
@@ -645,7 +766,7 @@ function RecordsList({ appId, userId, db }) {
                         Save
                       </button>
                       <button
-                        onClick={handleCancelEdit}
+                        onClick={() => handleCancelEdit}
                         className="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-3 rounded-lg shadow-md transition duration-200"
                       >
                         Cancel
