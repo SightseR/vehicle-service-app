@@ -53,7 +53,6 @@ function RecordsList({ appId, userId, db }) {
     }, (err) => {
       console.error("Error fetching records:", err);
       setError("Failed to load records. " + err.message);
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -156,9 +155,9 @@ function RecordsList({ appId, userId, db }) {
         rows += `
           <tr>
             <td class="service-type">${serviceType}</td>
-            <td class="checkbox-cell"><input type="checkbox" ${doneChecked} disabled></td>
-            <td class="checkbox-cell"><input type="checkbox" ${urgentChecked} disabled></td>
-            <td class="checkbox-cell"><input type="checkbox" ${laterChecked} disabled></td>
+            <td class="checkbox-cell"><div class="checkbox-square ${doneChecked}"></div></td>
+            <td class="checkbox-cell"><div class="checkbox-square ${urgentChecked}"></div></td>
+            <td class="checkbox-cell"><div class="checkbox-square ${laterChecked}"></div></td>
           </tr>
         `;
       });
@@ -184,10 +183,53 @@ function RecordsList({ appId, userId, db }) {
               .checkbox-cell { text-align: center; width: 40px; }
               .service-type { width: 150px; }
               .radio-option { display: inline-block; margin-right: 10px; }
-              input[type="checkbox"], input[type="radio"] { transform: scale(1.2); margin-right: 5px; vertical-align: middle; }
-              .flex-container { display: flex; justify-content: space-between; gap: 10mm; }
-              .flex-item { flex: 1; }
+
+              /* Custom Checkbox Styling for Print using div */
+              .checkbox-square {
+                width: 16px;
+                height: 16px;
+                border: 1px solid #000;
+                display: inline-block;
+                position: relative;
+                margin: auto; /* Center the square in the cell */
+              }
+              .checkbox-square.checked::after {
+                content: "✔"; /* Checkmark symbol */
+                color: #000; /* Black checkmark */
+                font-size: 14px;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+              }
+
+              /* UPDATED: Custom Radio Button Styling for Print using div with visible content */
+              .radio-circle {
+                  width: 16px;
+                  height: 16px;
+                  border: 1px solid #000;
+                  border-radius: 50%; /* Make it circular */
+                  display: inline-block;
+                  position: relative;
+                  vertical-align: middle;
+                  margin-right: 5px;
+              }
+              .radio-circle.checked::after {
+                  content: '●'; /* Use black circle unicode character */
+                  font-size: 10px; /* Adjust size of the bullet */
+                  color: #000; /* Black inner circle */
+                  position: absolute;
+                  top: 50%;
+                  left: 50%;
+                  transform: translate(-50%, -50%);
+                  line-height: 1; /* Ensure proper vertical alignment of the bullet */
+              }
+
+              /* Hide actual form controls in print to avoid conflicts */
               @media print {
+                  input[type="checkbox"], input[type="radio"] {
+                      display: none;
+                  }
                   body { margin: 10mm; }
                   @page { size: A4; margin: 10mm; }
                   .header-title { margin-bottom: 10px; }
@@ -217,25 +259,29 @@ function RecordsList({ appId, userId, db }) {
                   <td>Year</td><td>${record.year}</td>
                   <td colspan="2">
                       Gearbox:
-                      <label class="radio-option"><input type="radio" ${record.gearbox === 'Auto' ? 'checked' : ''} disabled> Auto</label>
-                      <label class="radio-option"><input type="radio" ${record.gearbox === 'Manual' ? 'checked' : ''} disabled> Manual</label>
+                      <label class="radio-option">
+                        <div class="radio-circle ${record.gearbox === 'Auto' ? 'checked' : ''}"></div> Auto
+                      </label>
+                      <label class="radio-option">
+                        <div class="radio-circle ${record.gearbox === 'Manual' ? 'checked' : ''}"></div> Manual
+                      </label>
                   </td>
               </tr>
               <tr>
                   <td colspan="2">
                       Motive Power:
-                      <label class="radio-option"><input type="radio" ${record.motivePower === 'Petrol' ? 'checked' : ''} disabled> Petrol</label>
-                      <label class="radio-option"><input type="radio" ${record.motivePower === 'Diesel' ? 'checked' : ''} disabled> Diesel</label>
-                      <label class="radio-option"><input type="radio" ${record.motivePower === 'Gas' ? 'checked' : ''} disabled> Gas</label>
-                      <label class="radio-option"><input type="radio" ${record.motivePower === 'Hybrid' ? 'checked' : ''} disabled> Hybrid</label>
-                      <label class="radio-option"><input type="radio" ${record.motivePower === 'PHEV' ? 'checked' : ''} disabled> PHEV</label>
-                      <label class="radio-option"><input type="radio" ${record.motivePower === 'HEV' ? 'checked' : ''} disabled> HEV</label>
+                      <label class="radio-option"><div class="radio-circle ${record.motivePower === 'Petrol' ? 'checked' : ''}"></div> Petrol</label>
+                      <label class="radio-option"><div class="radio-circle ${record.motivePower === 'Diesel' ? 'checked' : ''}"></div> Diesel</label>
+                      <label class="radio-option"><div class="radio-circle ${record.motivePower === 'Gas' ? 'checked' : ''}"></div> Gas</label>
+                      <label class="radio-option"><div class="radio-circle ${record.motivePower === 'Hybrid' ? 'checked' : ''}"></div> Hybrid</label>
+                      <label class="radio-option"><div class="radio-circle ${record.motivePower === 'PHEV' ? 'checked' : ''}"></div> PHEV</label>
+                      <label class="radio-option"><div class="radio-circle ${record.motivePower === 'HEV' ? 'checked' : ''}"></div> HEV</label>
                   </td>
                   <td colspan="2">
                       Drive Mode:
-                      <label class="radio-option"><input type="radio" ${record.driveMode === 'Rear' ? 'checked' : ''} disabled> Rear</label>
-                      <label class="radio-option"><input type="radio" ${record.driveMode === 'Front' ? 'checked' : ''} disabled> Front</label>
-                      <label class="radio-option"><input type="radio" ${record.driveMode === '4 x 4' ? 'checked' : ''} disabled> 4 x 4</label>
+                      <label class="radio-option"><div class="radio-circle ${record.driveMode === 'Rear' ? 'checked' : ''}"></div> Rear</label>
+                      <label class="radio-option"><div class="radio-circle ${record.driveMode === 'Front' ? 'checked' : ''}"></div> Front</label>
+                      <label class="radio-option"><div class="radio-circle ${record.driveMode === '4 x 4' ? 'checked' : ''}"></div> 4 x 4</label>
                   </td>
               </tr>
           </table>
@@ -403,7 +449,7 @@ function RecordsList({ appId, userId, db }) {
       {/* New button for downloading all records */}
       <button
         onClick={handleDownloadAllRecords}
-        className="mb-4 bg-blue-600 text-white shadow-md hover:bg-gray-400 hover:text-black font-bold py-2 px-4 rounded-lg transition duration-200"
+        className="mb-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-200"
       >
         Download All Records (CSV)
       </button>
