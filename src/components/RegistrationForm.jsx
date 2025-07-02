@@ -165,8 +165,8 @@ function RegistrationForm({ appId, userId, db }) {
   );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto"> {/* Added responsive padding and max-width */}
-      <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Vehicle Inspection Report</h2> {/* Centered title */}
+    <form onSubmit={handleSubmit} className="space-y-6 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Vehicle Inspection Report</h2>
 
       {message && (
         <div className={`p-3 rounded-lg text-white ${messageType === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
@@ -242,7 +242,7 @@ function RegistrationForm({ appId, userId, db }) {
 
       <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
         <legend className="text-lg font-semibold text-gray-700 px-2">Gearbox</legend>
-        <div className="mt-4 flex flex-wrap gap-4"> {/* Used flex-wrap for mobile responsiveness */}
+        <div className="mt-4 flex flex-wrap gap-4">
           <label className="inline-flex items-center">
             <input
               type="radio"
@@ -272,7 +272,7 @@ function RegistrationForm({ appId, userId, db }) {
 
       <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
         <legend className="text-lg font-semibold text-gray-700 px-2">Motive Power</legend>
-        <div className="mt-4 flex flex-wrap gap-4"> {/* Used flex-wrap for mobile responsiveness */}
+        <div className="mt-4 flex flex-wrap gap-4">
           <label className="inline-flex items-center">
             <input
               type="radio"
@@ -350,7 +350,7 @@ function RegistrationForm({ appId, userId, db }) {
 
       <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
         <legend className="text-lg font-semibold text-gray-700 px-2">Drive Mode</legend>
-        <div className="mt-4 flex flex-wrap gap-4"> {/* Used flex-wrap for mobile responsiveness */}
+        <div className="mt-4 flex flex-wrap gap-4">
           <label className="inline-flex items-center">
             <input
               type="radio"
@@ -400,75 +400,75 @@ function RegistrationForm({ appId, userId, db }) {
           <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
             <thead>
               <tr className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
-                <th className="py-3 px-6 text-left"></th>
-                <th className="py-3 px-6 text-center">Left</th>
-                <th className="py-3 px-6 text-center">Right</th>
+                <th className="py-2 px-3 text-left"></th> {/* Reduced padding */}
+                <th className="py-2 px-3 text-center">Left</th> {/* Reduced padding */}
+                <th className="py-2 px-3 text-center">Right</th> {/* Reduced padding */}
               </tr>
             </thead>
             <tbody className="text-gray-600 text-sm font-light">
               <tr className="border-b border-gray-200 hover:bg-gray-50">
-                <td className="py-3 px-6 text-left whitespace-nowrap font-medium">Front</td>
-                <td className="py-3 px-6 text-center">
+                <td className="py-2 px-3 text-left whitespace-nowrap font-medium">Front</td> {/* Reduced padding */}
+                <td className="py-2 px-3 text-center"> {/* Reduced padding */}
                   <div className="flex items-center justify-center">
                     <input
                       type="number"
                       name="brakePercentages.frontLeft"
                       value={formData.brakePercentages.frontLeft}
                       onChange={handleChange}
-                      className="w-24 p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center"
+                      className="w-15 p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center text-sm" /* Changed w-24 to w-20, reduced padding, added text-sm */
                       min="0"
                       max="100"
                       placeholder="%"
                     />
-                    <span className="ml-2 text-gray-700">%</span>
+                    <span className="ml-1 text-gray-700 text-sm">%</span> {/* Reduced margin, added text-sm */}
                   </div>
                 </td>
-                <td className="py-3 px-6 text-center">
+                <td className="py-2 px-3 text-center"> {/* Reduced padding */}
                   <div className="flex items-center justify-center">
                     <input
                       type="number"
                       name="brakePercentages.frontRight"
                       value={formData.brakePercentages.frontRight}
                       onChange={handleChange}
-                      className="w-24 p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center"
+                      className="w-15 p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center text-sm" /* Changed w-24 to w-20, reduced padding, added text-sm */
                       min="0"
                       max="100"
                       placeholder="%"
                     />
-                    <span className="ml-2 text-gray-700">%</span>
+                    <span className="ml-1 text-gray-700 text-sm">%</span> {/* Reduced margin, added text-sm */}
                   </div>
                 </td>
               </tr>
               <tr className="border-b border-gray-200 hover:bg-gray-50">
-                <td className="py-3 px-6 text-left whitespace-nowrap font-medium">Rear</td>
-                <td className="py-3 px-6 text-center">
+                <td className="py-2 px-3 text-left whitespace-nowrap font-medium">Rear</td> {/* Reduced padding */}
+                <td className="py-2 px-3 text-center"> {/* Reduced padding */}
                   <div className="flex items-center justify-center">
                     <input
                       type="number"
                       name="brakePercentages.rearLeft"
                       value={formData.brakePercentages.rearLeft}
                       onChange={handleChange}
-                      className="w-24 p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center"
+                      className="w-15 p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center text-sm" /* Changed w-24 to w-20, reduced padding, added text-sm */
                       min="0"
                       max="100"
                       placeholder="%"
                     />
-                    <span className="ml-2 text-gray-700">%</span>
+                    <span className="ml-1 text-gray-700 text-sm">%</span> {/* Reduced margin, added text-sm */}
                   </div>
                 </td>
-                <td className="py-3 px-6 text-center">
+                <td className="py-2 px-3 text-center"> {/* Reduced padding */}
                   <div className="flex items-center justify-center">
                     <input
                       type="number"
                       name="brakePercentages.rearRight"
                       value={formData.brakePercentages.rearRight}
                       onChange={handleChange}
-                      className="w-24 p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center"
+                      className="w-15 p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center text-sm" /* Changed w-24 to w-20, reduced padding, added text-sm */
                       min="0"
                       max="100"
                       placeholder="%"
                     />
-                    <span className="ml-2 text-gray-700">%</span>
+                    <span className="ml-1 text-gray-700 text-sm">%</span> {/* Reduced margin, added text-sm */}
                   </div>
                 </td>
               </tr>
