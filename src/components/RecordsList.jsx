@@ -1,22 +1,20 @@
-// src/components/RecordsList.jsx
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
-import { db } from '../firebaseConfig'; // Import db from firebaseConfig
+import { collection, query, onSnapshot } from 'firebase/firestore';
 
-function RecordsList({ appId, userId }) {
+function RecordsList({ appId, userId, db }) {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!userId) {
-      setError('User not authenticated. Cannot fetch records.');
+    if (!userId || !db) {
+      setError('User not authenticated or database not initialized. Cannot fetch records.');
       setLoading(false);
       return;
     }
 
     const collectionPath = `artifacts/${appId}/public/data/vehicleServices`;
-    const q = query(collection(db, collectionPath)); // Removed orderBy to avoid index issues. Data will be sorted in JS.
+    const q = query(collection(db, collectionPath));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedRecords = [];
@@ -24,9 +22,7 @@ function RecordsList({ appId, userId }) {
         fetchedRecords.push({ id: doc.id, ...doc.data() });
       });
 
-      // Sort records by timestamp in descending order (newest first)
       fetchedRecords.sort((a, b) => {
-        // Handle cases where timestamp might be a Firebase Timestamp object or null/undefined
         const timeA = a.timestamp ? (a.timestamp.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp).getTime()) : 0;
         const timeB = b.timestamp ? (b.timestamp.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp).getTime()) : 0;
         return timeB - timeA;
@@ -40,20 +36,19 @@ function RecordsList({ appId, userId }) {
       setLoading(false);
     });
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [appId, userId]); // Re-run effect if appId or userId changes
+  }, [appId, userId, db]);
 
   if (loading) {
-    return <div className="text-center text-gray-700">Loading records...</div>;
+    return <div className="text-center text-gray-700 py-8">Loading records...</div>;
   }
 
   if (error) {
-    return <div className="text-center text-red-600">Error: {error}</div>;
+    return <div className="text-center text-red-600 py-8">Error: {error}</div>;
   }
 
   if (records.length === 0) {
-    return <div className="text-center text-gray-700">No records found. Register a service first!</div>;
+    return <div className="text-center text-gray-700 py-8">No records found. Register a service first!</div>;
   }
 
   return (
@@ -121,4 +116,5 @@ function RecordsList({ appId, userId }) {
   );
 }
 
+// Add this line to export the component as a default export
 export default RecordsList;

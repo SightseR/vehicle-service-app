@@ -3,6 +3,11 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, addDoc, serverTimestamp, query, onSnapshot } from 'firebase/firestore';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 
+// Import the components you defined separately
+import RegistrationForm from './components/RegistrationForm';
+import RecordsList from './components/RecordsList';
+
+
 // Main App Component
 function App() {
   const [currentPage, setCurrentPage] = useState('register'); // 'register' or 'records'
@@ -11,31 +16,33 @@ function App() {
   const [db, setDb] = useState(null); // State to hold Firestore instance
   const [auth, setAuth] = useState(null); // State to hold Auth instance
 
-  // Global variables provided by the Canvas environment
+  // Global variables provided by the Canvas environment (if running there)
   const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
   const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-  // Determine firebaseConfig: ALWAYS prefer __firebase_config from Canvas environment.
-  // If __firebase_config is not defined (e.g., running outside Canvas), provide a dummy config
-  // to avoid compilation issues, as import.meta.env is not supported in es2015 target.
+  // Determine firebaseConfig:
+  // 1. ALWAYS prefer __firebase_config from Canvas environment.
+  // 2. If not in Canvas (e.g., local dev or Vercel), use VITE_ prefxied environment variables.
   const firebaseConfig = typeof __firebase_config !== 'undefined'
     ? JSON.parse(__firebase_config)
     : {
-        apiKey: "dummy-api-key",
-        authDomain: "dummy-auth-domain",
-        projectId: "dummy-project-id",
-        storageBucket: "dummy-storage-bucket",
-        messagingSenderId: "dummy-messaging-sender-id",
-        appId: "dummy-app-id",
+        // Fallback for local development using .env variables (read via import.meta.env)
+        apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+        projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+        storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+        appId: import.meta.env.VITE_FIREBASE_APP_ID,
+        measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID // Include if using Analytics
       };
 
   // Firebase Initialization and Authentication
   useEffect(() => {
     const initFirebase = async () => {
       try {
-        // Only initialize Firebase if firebaseConfig has a valid apiKey
-        if (!firebaseConfig || !firebaseConfig.apiKey || firebaseConfig.apiKey === "dummy-api-key") {
-          console.error("Firebase config is missing or dummy. Cannot initialize Firebase.");
+        // Check if firebaseConfig has a valid apiKey after determining its source
+        if (!firebaseConfig || !firebaseConfig.apiKey) {
+          console.error("Firebase config is missing or invalid. Cannot initialize Firebase. Check your .env file or Canvas environment variables.");
           setFirebaseInitialized(true); // Mark as initialized to stop loading, but indicate error
           return;
         }
