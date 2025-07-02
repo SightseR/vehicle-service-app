@@ -540,7 +540,7 @@ function RecordsList({ appId, userId, db }) {
                       name="regNumber"
                       value={editFormData.regNumber || ''}
                       onChange={handleEditFormChange}
-                      className="w-24 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full sm:w-24 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     />
                   ) : (
                     record.regNumber
@@ -554,7 +554,7 @@ function RecordsList({ appId, userId, db }) {
                       name="brand"
                       value={editFormData.brand || ''}
                       onChange={handleEditFormChange}
-                      className="w-24 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full sm:w-24 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     />
                   ) : (
                     record.brand
@@ -569,7 +569,7 @@ function RecordsList({ appId, userId, db }) {
                         name="model"
                         value={editFormData.model || ''}
                         onChange={handleEditFormChange}
-                        className="w-24 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full sm:w-24 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Model"
                       />
                       <input
@@ -577,7 +577,7 @@ function RecordsList({ appId, userId, db }) {
                         name="year"
                         value={editFormData.year || ''}
                         onChange={handleEditFormChange}
-                        className="w-24 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full sm:w-24 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Year"
                       />
                     </div>
@@ -593,7 +593,7 @@ function RecordsList({ appId, userId, db }) {
                       name="kilometers"
                       value={editFormData.kilometers || ''}
                       onChange={handleEditFormChange}
-                      className="w-24 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full sm:w-24 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     />
                   ) : (
                     `${record.kilometers} km`
@@ -606,7 +606,7 @@ function RecordsList({ appId, userId, db }) {
                       name="gearbox"
                       value={editFormData.gearbox || ''}
                       onChange={handleEditFormChange}
-                      className="w-24 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full sm:w-24 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="">Select</option>
                       <option value="Auto">Auto</option>
@@ -623,7 +623,7 @@ function RecordsList({ appId, userId, db }) {
                       name="motivePower"
                       value={editFormData.motivePower || ''}
                       onChange={handleEditFormChange}
-                      className="w-24 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full sm:w-24 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="">Select</option>
                       <option value="Petrol">Petrol</option>
@@ -644,7 +644,7 @@ function RecordsList({ appId, userId, db }) {
                       name="driveMode"
                       value={editFormData.driveMode || ''}
                       onChange={handleEditFormChange}
-                      className="w-24 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full sm:w-24 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="">Select</option>
                       <option value="Rear">Rear</option>
@@ -766,7 +766,7 @@ function RecordsList({ appId, userId, db }) {
                         Save
                       </button>
                       <button
-                        onClick={() => handleCancelEdit}
+                        onClick={handleCancelEdit}
                         className="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-3 rounded-lg shadow-md transition duration-200"
                       >
                         Cancel

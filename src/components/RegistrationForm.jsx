@@ -29,7 +29,6 @@ function RegistrationForm({ appId, userId, db }) {
     driveMode: '',
     engineServices: serviceTypes.engine.map(type => ({ type, done: false, urgent: false, later: false })),
     chassisServices: serviceTypes.chassis.map(type => ({ type, done: false, urgent: false, later: false })),
-    // NEW: State for brake percentages
     brakePercentages: {
       frontLeft: '',
       frontRight: '',
@@ -42,7 +41,6 @@ function RegistrationForm({ appId, userId, db }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Handle nested state for brake percentages
     if (name.startsWith('brakePercentages.')) {
       const brakeField = name.split('.')[1];
       setFormData(prev => ({
@@ -92,7 +90,6 @@ function RegistrationForm({ appId, userId, db }) {
       });
       setMessage('Service registration successful! Document ID: ' + docRef.id);
       setMessageType('success');
-      // Reset form data after successful submission
       setFormData({
         regNumber: '',
         kilometers: '',
@@ -104,7 +101,7 @@ function RegistrationForm({ appId, userId, db }) {
         driveMode: '',
         engineServices: serviceTypes.engine.map(type => ({ type, done: false, urgent: false, later: false })),
         chassisServices: serviceTypes.chassis.map(type => ({ type, done: false, urgent: false, later: false })),
-        brakePercentages: { // Reset brake percentages
+        brakePercentages: {
           frontLeft: '',
           frontRight: '',
           rearLeft: '',
@@ -168,8 +165,8 @@ function RegistrationForm({ appId, userId, db }) {
   );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Vehicle Inspection Report</h2>
+    <form onSubmit={handleSubmit} className="space-y-6 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto"> {/* Added responsive padding and max-width */}
+      <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Vehicle Inspection Report</h2> {/* Centered title */}
 
       {message && (
         <div className={`p-3 rounded-lg text-white ${messageType === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
@@ -245,7 +242,7 @@ function RegistrationForm({ appId, userId, db }) {
 
       <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
         <legend className="text-lg font-semibold text-gray-700 px-2">Gearbox</legend>
-        <div className="mt-4 flex flex-wrap gap-4">
+        <div className="mt-4 flex flex-wrap gap-4"> {/* Used flex-wrap for mobile responsiveness */}
           <label className="inline-flex items-center">
             <input
               type="radio"
@@ -275,7 +272,7 @@ function RegistrationForm({ appId, userId, db }) {
 
       <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
         <legend className="text-lg font-semibold text-gray-700 px-2">Motive Power</legend>
-        <div className="mt-4 flex flex-wrap gap-4">
+        <div className="mt-4 flex flex-wrap gap-4"> {/* Used flex-wrap for mobile responsiveness */}
           <label className="inline-flex items-center">
             <input
               type="radio"
@@ -353,7 +350,7 @@ function RegistrationForm({ appId, userId, db }) {
 
       <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
         <legend className="text-lg font-semibold text-gray-700 px-2">Drive Mode</legend>
-        <div className="mt-4 flex flex-wrap gap-4">
+        <div className="mt-4 flex flex-wrap gap-4"> {/* Used flex-wrap for mobile responsiveness */}
           <label className="inline-flex items-center">
             <input
               type="radio"
@@ -393,12 +390,10 @@ function RegistrationForm({ appId, userId, db }) {
         </div>
       </fieldset>
 
-      
-
       {renderServiceTable('engineServices', formData.engineServices)}
       {renderServiceTable('chassisServices', formData.chassisServices)}
 
-      {/* NEW: Brake Percentages Table */}
+      {/* Brake Percentages Table */}
       <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
         <legend className="text-lg font-semibold text-gray-700 px-2">Brake Percentages</legend>
         <div className="overflow-x-auto mt-4">
