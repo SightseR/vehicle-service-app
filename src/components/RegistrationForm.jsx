@@ -1,7 +1,5 @@
-// src/components/RegistrationForm.jsx
 import React, { useState } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebaseConfig'; // Import db from firebaseConfig
 
 const serviceTypes = {
   engine: [
@@ -18,7 +16,7 @@ const serviceTypes = {
   ]
 };
 
-function RegistrationForm({ appId, userId }) {
+function RegistrationForm({ appId, userId, db }) {
   const [formData, setFormData] = useState({
     regNumber: '',
     kilometers: '',
@@ -32,27 +30,24 @@ function RegistrationForm({ appId, userId }) {
     chassisServices: serviceTypes.chassis.map(type => ({ type, done: false, urgent: false, later: false })),
   });
   const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState(''); // 'success' or 'error'
+  const [messageType, setMessageType] = useState('');
 
-  // Handle changes for text and number inputs
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle changes for radio buttons
   const handleRadioChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle changes for service checkboxes
   const handleServiceChange = (category, index, field) => {
     setFormData(prev => {
       const updatedServices = [...prev[category]];
       updatedServices[index] = {
         ...updatedServices[index],
-        [field]: !updatedServices[index][field] // Toggle boolean value
+        [field]: !updatedServices[index][field]
       };
       return { ...prev, [category]: updatedServices };
     });
@@ -60,25 +55,23 @@ function RegistrationForm({ appId, userId }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage(''); // Clear previous messages
+    setMessage('');
 
-    if (!userId) {
-      setMessage('Error: User not authenticated. Please refresh the page.');
+    if (!userId || !db) {
+      setMessage('Error: User not authenticated or database not initialized. Please refresh the page.');
       setMessageType('error');
       return;
     }
 
     try {
-      // Construct the Firestore collection path
       const collectionPath = `artifacts/${appId}/public/data/vehicleServices`;
       const docRef = await addDoc(collection(db, collectionPath), {
         ...formData,
-        timestamp: serverTimestamp(), // Add server timestamp
-        userId: userId, // Store the user ID with the record
+        timestamp: serverTimestamp(),
+        userId: userId,
       });
       setMessage('Service registration successful! Document ID: ' + docRef.id);
       setMessageType('success');
-      // Optionally reset form after submission
       setFormData({
         regNumber: '',
         kilometers: '',
@@ -98,7 +91,6 @@ function RegistrationForm({ appId, userId }) {
     }
   };
 
-  // Helper to render service table rows
   const renderServiceTable = (category, services) => (
     <div className="mb-6">
       <h3 className="text-xl font-semibold text-gray-700 mb-3">{category === 'engineServices' ? 'Engine Services' : 'Chassis Services'}</h3>
@@ -158,7 +150,6 @@ function RegistrationForm({ appId, userId }) {
         </div>
       )}
 
-      {/* Vehicle Information */}
       <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
         <legend className="text-lg font-semibold text-gray-700 px-2">Vehicle Information</legend>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -225,7 +216,6 @@ function RegistrationForm({ appId, userId }) {
         </div>
       </fieldset>
 
-      {/* Gearbox */}
       <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
         <legend className="text-lg font-semibold text-gray-700 px-2">Gearbox</legend>
         <div className="mt-4 flex flex-wrap gap-4">
@@ -256,7 +246,6 @@ function RegistrationForm({ appId, userId }) {
         </div>
       </fieldset>
 
-      {/* Motive Power */}
       <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
         <legend className="text-lg font-semibold text-gray-700 px-2">Motive Power</legend>
         <div className="mt-4 flex flex-wrap gap-4">
@@ -335,7 +324,6 @@ function RegistrationForm({ appId, userId }) {
         </div>
       </fieldset>
 
-      {/* Drive Mode */}
       <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
         <legend className="text-lg font-semibold text-gray-700 px-2">Drive Mode</legend>
         <div className="mt-4 flex flex-wrap gap-4">
@@ -378,10 +366,7 @@ function RegistrationForm({ appId, userId }) {
         </div>
       </fieldset>
 
-      {/* Engine Services Table */}
       {renderServiceTable('engineServices', formData.engineServices)}
-
-      {/* Chassis Services Table */}
       {renderServiceTable('chassisServices', formData.chassisServices)}
 
       <button
@@ -394,4 +379,118 @@ function RegistrationForm({ appId, userId }) {
   );
 }
 
-export default RegistrationForm;
+// RecordsList Component (nested within the same file for Canvas compatibility)
+function RecordsList({ appId, userId, db }) {
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!userId || !db) {
+      setError('User not authenticated or database not initialized. Cannot fetch records.');
+      setLoading(false);
+      return;
+    }
+
+    const collectionPath = `artifacts/${appId}/public/data/vehicleServices`;
+    const q = query(collection(db, collectionPath));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedRecords = [];
+      snapshot.forEach((doc) => {
+        fetchedRecords.push({ id: doc.id, ...doc.data() });
+      });
+
+      fetchedRecords.sort((a, b) => {
+        const timeA = a.timestamp ? (a.timestamp.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp).getTime()) : 0;
+        const timeB = b.timestamp ? (b.timestamp.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp).getTime()) : 0;
+        return timeB - timeA;
+      });
+
+      setRecords(fetchedRecords);
+      setLoading(false);
+    }, (err) => {
+      console.error("Error fetching records:", err);
+      setError("Failed to load records. " + err.message);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [appId, userId, db]);
+
+  if (loading) {
+    return <div className="text-center text-gray-700 py-8">Loading records...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-red-600 py-8">Error: {error}</div>;
+  }
+
+  if (records.length === 0) {
+    return <div className="text-center text-gray-700 py-8">No records found. Register a service first!</div>;
+  }
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">All Registered Vehicle Services</h2>
+      <div className="overflow-x-auto rounded-lg shadow-md">
+        <table className="min-w-full bg-white border border-gray-200">
+          <thead>
+            <tr className="bg-blue-600 text-white uppercase text-sm leading-normal">
+              <th className="py-3 px-6 text-left rounded-tl-lg">Reg. No.</th>
+              <th className="py-3 px-6 text-left">Brand</th>
+              <th className="py-3 px-6 text-left">Model</th>
+              <th className="py-3 px-6 text-left">Kilometers</th>
+              <th className="py-3 px-6 text-left">Gearbox</th>
+              <th className="py-3 px-6 text-left">Motive Power</th>
+              <th className="py-3 px-6 text-left">Drive Mode</th>
+              <th className="py-3 px-6 text-left">Engine Services</th>
+              <th className="py-3 px-6 text-left">Chassis Services</th>
+              <th className="py-3 px-6 text-left rounded-tr-lg">Registered On</th>
+            </tr>
+          </thead>
+          <tbody className="text-gray-700 text-sm font-light">
+            {records.map((record) => (
+              <tr key={record.id} className="border-b border-gray-200 hover:bg-gray-50">
+                <td className="py-3 px-6 text-left whitespace-nowrap">{record.regNumber}</td>
+                <td className="py-3 px-6 text-left">{record.brand}</td>
+                <td className="py-3 px-6 text-left">{record.model} ({record.year})</td>
+                <td className="py-3 px-6 text-left">{record.kilometers} km</td>
+                <td className="py-3 px-6 text-left">{record.gearbox}</td>
+                <td className="py-3 px-6 text-left">{record.motivePower}</td>
+                <td className="py-3 px-6 text-left">{record.driveMode}</td>
+                <td className="py-3 px-6 text-left">
+                  <ul className="list-disc list-inside space-y-1">
+                    {record.engineServices && record.engineServices.map((service, idx) => (
+                      <li key={idx}>
+                        {service.type}
+                        {service.done && <span className="text-green-600 ml-2">(Done)</span>}
+                        {service.urgent && <span className="text-red-600 ml-2">(Urgent)</span>}
+                        {service.later && <span className="text-yellow-600 ml-2">(Later)</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </td>
+                <td className="py-3 px-6 text-left">
+                  <ul className="list-disc list-inside space-y-1">
+                    {record.chassisServices && record.chassisServices.map((service, idx) => (
+                      <li key={idx}>
+                        {service.type}
+                        {service.done && <span className="text-green-600 ml-2">(Done)</span>}
+                        {service.urgent && <span className="text-red-600 ml-2">(Urgent)</span>}
+                        {service.later && <span className="text-yellow-600 ml-2">(Later)</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </td>
+                <td className="py-3 px-6 text-left whitespace-nowrap">
+                  {record.timestamp?.toDate ? record.timestamp.toDate().toLocaleString() : 'N/A'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

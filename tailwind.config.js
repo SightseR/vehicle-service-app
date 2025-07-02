@@ -2,12 +2,12 @@
 export default {
   content: [
     "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}", // This line tells Tailwind to scan all JS, TS, JSX, TSX files in src/
+    "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
       fontFamily: {
-        inter: ['Inter', 'sans-serif'], // Define Inter font
+        inter: ['Inter', 'sans-serif'],
       },
     },
   },

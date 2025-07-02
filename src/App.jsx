@@ -1,33 +1,61 @@
-// src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth'; // Import onAuthStateChanged
-import { db, auth, signInAnonymously } from './firebaseConfig'; // Import db, auth, and signInAnonymously
-import RegistrationForm from './components/RegistrationForm';
-import RecordsList from './components/RecordsList';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, addDoc, serverTimestamp, query, onSnapshot } from 'firebase/firestore';
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 
+// Main App Component
 function App() {
   const [currentPage, setCurrentPage] = useState('register'); // 'register' or 'records'
   const [firebaseInitialized, setFirebaseInitialized] = useState(false);
-  const [userId, setUserId] = useState(null); // State to store the user ID
+  const [userId, setUserId] = useState(null);
+  const [db, setDb] = useState(null); // State to hold Firestore instance
+  const [auth, setAuth] = useState(null); // State to hold Auth instance
 
   // Global variables provided by the Canvas environment
   const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
   const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
+  // Determine firebaseConfig: ALWAYS prefer __firebase_config from Canvas environment.
+  // If __firebase_config is not defined (e.g., running outside Canvas), provide a dummy config
+  // to avoid compilation issues, as import.meta.env is not supported in es2015 target.
+  const firebaseConfig = typeof __firebase_config !== 'undefined'
+    ? JSON.parse(__firebase_config)
+    : {
+        apiKey: "dummy-api-key",
+        authDomain: "dummy-auth-domain",
+        projectId: "dummy-project-id",
+        storageBucket: "dummy-storage-bucket",
+        messagingSenderId: "dummy-messaging-sender-id",
+        appId: "dummy-app-id",
+      };
+
+  // Firebase Initialization and Authentication
   useEffect(() => {
-    const initializeFirebaseAndAuth = async () => {
+    const initFirebase = async () => {
       try {
-        // Sign in with custom token if available, otherwise anonymously
+        // Only initialize Firebase if firebaseConfig has a valid apiKey
+        if (!firebaseConfig || !firebaseConfig.apiKey || firebaseConfig.apiKey === "dummy-api-key") {
+          console.error("Firebase config is missing or dummy. Cannot initialize Firebase.");
+          setFirebaseInitialized(true); // Mark as initialized to stop loading, but indicate error
+          return;
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const firestore = getFirestore(app);
+        const firebaseAuth = getAuth(app);
+
+        setDb(firestore);
+        setAuth(firebaseAuth);
+
         if (initialAuthToken) {
-          await auth.signInWithCustomToken(initialAuthToken);
+          await signInWithCustomToken(firebaseAuth, initialAuthToken);
           console.log("Signed in with custom token.");
         } else {
-          await signInAnonymously(auth);
+          await signInAnonymously(firebaseAuth);
           console.log("Signed in anonymously.");
         }
 
-        // Listen for auth state changes
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
           if (user) {
             setUserId(user.uid);
             console.log("User UID:", user.uid);
@@ -35,19 +63,18 @@ function App() {
             setUserId(null);
             console.log("No user is signed in.");
           }
-          setFirebaseInitialized(true); // Firebase is ready once auth state is checked
+          setFirebaseInitialized(true);
         });
 
-        // Cleanup subscription on unmount
         return () => unsubscribe();
       } catch (error) {
         console.error("Error during Firebase initialization or authentication:", error);
-        setFirebaseInitialized(true); // Still set to true to attempt rendering, but with error
+        setFirebaseInitialized(true);
       }
     };
 
-    initializeFirebaseAndAuth();
-  }, [initialAuthToken]); // Re-run if initialAuthToken changes
+    initFirebase();
+  }, [initialAuthToken, firebaseConfig]); // Depend on firebaseConfig to re-initialize if it changes
 
   if (!firebaseInitialized) {
     return (
@@ -94,9 +121,9 @@ function App() {
           </div>
         )}
         {currentPage === 'register' ? (
-          <RegistrationForm appId={appId} userId={userId} />
+          <RegistrationForm appId={appId} userId={userId} db={db} />
         ) : (
-          <RecordsList appId={appId} userId={userId} />
+          <RecordsList appId={appId} userId={userId} db={db} />
         )}
       </main>
     </div>
