@@ -103,7 +103,7 @@ function App() {
             className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-200 ${
               currentPage === 'register'
                 ? 'bg-blue-600 text-white shadow-md'
-                : 'bg-gray-200 text-gray-700 hover:bg-blue-100'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-400'
             }`}
           >
             Register Service
@@ -113,7 +113,7 @@ function App() {
             className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-200 ${
               currentPage === 'records'
                 ? 'bg-blue-600 text-white shadow-md'
-                : 'bg-gray-200 text-gray-700 hover:bg-blue-100'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-400'
             }`}
           >
             View Records
