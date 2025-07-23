@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
-// UPDATED: serviceTypes to match the RegistrationForm
+// serviceTypes
 const serviceTypes = {
   engine: [
     'Oil change', 'Oil filter change', 'Air filter change', 'AC filter change',
@@ -18,7 +18,7 @@ const serviceTypes = {
   ]
 };
 
-// RecordsList Component
+// RecordsList
 function RecordsList({ appId, userId, db }) {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +41,7 @@ function RecordsList({ appId, userId, db }) {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedRecords = [];
       snapshot.forEach((doc) => {
-        // Ensure brakePercentages are initialized if missing in old records
+        
         const data = doc.data();
         fetchedRecords.push({
           id: doc.id,
@@ -73,7 +73,7 @@ function RecordsList({ appId, userId, db }) {
       ...record,
       engineServices: record.engineServices ? record.engineServices.map(s => ({ ...s })) : [],
       chassisServices: record.chassisServices ? record.chassisServices.map(s => ({ ...s })) : [],
-      // NEW: Copy brakePercentages to edit form data
+      
       brakePercentages: { ...record.brakePercentages }
     });
   };
@@ -102,7 +102,7 @@ function RecordsList({ appId, userId, db }) {
 
   const handleEditFormChange = (e) => {
     const { name, value } = e.target;
-    // Handle nested state for brake percentages
+    
     if (name.startsWith('brakePercentages.')) {
       const brakeField = name.split('.')[1];
       setEditFormData(prev => ({
@@ -155,7 +155,7 @@ function RecordsList({ appId, userId, db }) {
     setRecordToDelete(null);
   };
 
-  // Function to handle printing a single record with the new A4 stacked layout
+  // printing a single record with the A4
   const handlePrintRecord = (record) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -195,22 +195,22 @@ function RecordsList({ appId, userId, db }) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Vehicle Inspection Report</title>
           <style>
-              body { font-family: 'Inter', sans-serif; margin: 10mm; font-size: 9pt; color: #333; } /* Reduced margin and font size */
-              table { width: 100%; border-collapse: collapse; margin-bottom: 5mm; } /* Reduced margin-bottom */
-              th, td { border: 1px solid #000; padding: 3px 5px; text-align: left; font-size: 8.5pt; } /* Reduced padding and font size */
+              body { font-family: 'Inter', sans-serif; margin: 10mm; font-size: 9pt; color: #333; } 
+              table { width: 100%; border-collapse: collapse; margin-bottom: 5mm; } 
+              th, td { border: 1px solid #000; padding: 3px 5px; text-align: left; font-size: 8.5pt; } 
               th { background-color: #f0f0f0; font-weight: bold; }
-              .header-title { font-size: 13pt; font-weight: bold; text-align: center; margin-bottom: 10px; } /* Reduced font size and margin */
-              .date-box { float: right; border: 1px solid #000; padding: 3px; width: 100px; text-align: center; font-size: 8.5pt; } /* Reduced padding, width, and font size */
-              .section-title { font-size: 11pt; font-weight: bold; margin-top: 10px; margin-bottom: 3px; border-bottom: 1px solid #000; padding-bottom: 2px; } /* Reduced font size, margins, and padding */
-              .info-table td:first-child { font-weight: bold; width: 90px; } /* Adjusted width */
-              .checkbox-cell { text-align: center; width: 35px; } /* Adjusted width */
-              .service-type { width: 140px; } /* Adjusted width */
-              .radio-option { display: inline-block; margin-right: 8px; } /* Reduced margin */
+              .header-title { font-size: 13pt; font-weight: bold; text-align: center; margin-bottom: 10px; } 
+              .date-box { float: right; border: 1px solid #000; padding: 3px; width: 100px; text-align: center; font-size: 8.5pt; } 
+              .section-title { font-size: 11pt; font-weight: bold; margin-top: 10px; margin-bottom: 3px; border-bottom: 1px solid #000; padding-bottom: 2px; } 
+              .info-table td:first-child { font-weight: bold; width: 90px; } 
+              .checkbox-cell { text-align: center; width: 35px; } 
+              .service-type { width: 140px; }
+              .radio-option { display: inline-block; margin-right: 8px; } 
 
-              /* Custom Checkbox Styling for Print using div */
+              
               .checkbox-square {
-                width: 14px; /* Slightly smaller */
-                height: 14px; /* Slightly smaller */
+                width: 14px; 
+                height: 14px; 
                 border: 1px solid #000;
                 display: inline-block;
                 position: relative;
@@ -219,7 +219,7 @@ function RecordsList({ appId, userId, db }) {
               .checkbox-square.checked::after {
                 content: "✔";
                 color: #000;
-                font-size: 12px; /* Adjusted size */
+                font-size: 12px; 
                 position: absolute;
                 top: 50%;
                 left: 50%;
@@ -228,18 +228,18 @@ function RecordsList({ appId, userId, db }) {
 
               /* Custom Radio Button Styling for Print using div with visible content */
               .radio-circle {
-                  width: 14px; /* Slightly smaller */
-                  height: 14px; /* Slightly smaller */
+                  width: 14px; 
+                  height: 14px; 
                   border: 1px solid #000;
                   border-radius: 50%;
                   display: inline-block;
                   position: relative;
                   vertical-align: middle;
-                  margin-right: 4px; /* Reduced margin */
+                  margin-right: 4px; 
               }
               .radio-circle.checked::after {
                   content: '●';
-                  font-size: 9px; /* Adjusted size */
+                  font-size: 9px; 
                   color: #000;
                   position: absolute;
                   top: 50%;
@@ -247,23 +247,23 @@ function RecordsList({ appId, userId, db }) {
                   transform: translate(-50%, -50%);
                   line-height: 1;
               }
-              /* NEW: Right align brake percentage values */
+              
               .brake-percentage-cell {
                   text-align: right;
               }
 
 
-              /* Hide actual form controls in print to avoid conflicts */
+              
               @media print {
                   input[type="checkbox"], input[type="radio"] {
                       display: none;
                   }
-                  body { margin: 8mm; } /* Further reduced margin for print */
-                  @page { size: A4; margin: 8mm; } /* Further reduced page margin */
+                  body { margin: 8mm; } 
+                  @page { size: A4; margin: 8mm; } 
                   .header-title { margin-bottom: 8px; }
                   .date-box { margin-top: 0; }
-                  .flex-container { display: flex; justify-content: space-between; gap: 3mm; } /* Reduced gap */
-                  .flex-item { flex: 1; min-width: 0; } /* Ensure flex items can shrink */
+                  .flex-container { display: flex; justify-content: space-between; gap: 3mm; } 
+                  .flex-item { flex: 1; min-width: 0; } 
               }
           </style>
       </head>
@@ -383,7 +383,7 @@ function RecordsList({ appId, userId, db }) {
     printWindow.print();
   };
 
-  // Function to handle downloading all records as CSV
+  // downloading all records as CSV
   const handleDownloadAllRecords = () => {
     if (records.length === 0) {
       alert("No records to download.");
@@ -398,10 +398,10 @@ function RecordsList({ appId, userId, db }) {
     ];
 
     const csvRows = [];
-    csvRows.push(headers.join(',')); // Add header row
+    csvRows.push(headers.join(',')); 
 
     records.forEach(record => {
-      // Helper to format service arrays for CSV
+      // for CSV
       const formatServicesForCsv = (services) => {
         if (!services || services.length === 0) return '';
         return services.map(s => {
@@ -409,12 +409,12 @@ function RecordsList({ appId, userId, db }) {
           if (s.done) status.push('Done');
           if (s.urgent) status.push('Urgent');
           if (s.later) status.push('Later');
-          return `"${s.type} (${status.join(', ') || 'Pending'})"`; // Wrap with quotes for commas
-        }).join('; '); // Use semicolon to separate multiple services within one cell
+          return `"${s.type} (${status.join(', ') || 'Pending'})"`; 
+        }).join('; '); 
       };
 
       const row = [
-        `"${record.regNumber}"`, // Wrap in quotes in case of commas
+        `"${record.regNumber}"`, 
         `"${record.brand}"`,
         `"${record.model}"`,
         record.year,
@@ -422,7 +422,7 @@ function RecordsList({ appId, userId, db }) {
         record.gearbox,
         record.motivePower,
         record.driveMode,
-        record.brakePercentages.frontLeft || '', // New brake percentages
+        record.brakePercentages.frontLeft || '', 
         record.brakePercentages.frontRight || '',
         record.brakePercentages.rearLeft || '',
         record.brakePercentages.rearRight || '',
@@ -444,25 +444,25 @@ function RecordsList({ appId, userId, db }) {
   };
 
 
-  // Helper function to render service checkboxes for editing with better layout
+  // service checkboxes
   const renderEditServiceCheckboxes = (category, services) => (
-    <div className="flex flex-col space-y-1 p-1 bg-gray-50 rounded-md text-xs"> {/* Reduced padding/margin, smaller text */}
+    <div className="flex flex-col space-y-1 p-1 bg-gray-50 rounded-md text-xs"> 
       <h4 className="font-semibold text-gray-700 mb-1">
         {category === 'engineServices' ? 'Engine Status:' : 'Chassis Status:'}
       </h4>
-      <div className="grid grid-cols-1 gap-x-2 gap-y-1"> {/* Simplified grid for more vertical stacking */}
+      <div className="grid grid-cols-1 gap-x-2 gap-y-1"> 
         {services.map((service, index) => (
           <div key={index} className="flex flex-col border-b border-gray-200 pb-1 mb-1 last:border-b-0 last:pb-0 last:mb-0">
             <span className="font-medium text-gray-800 mb-0.5">{service.type}:</span>
-            <div className="flex flex-wrap gap-x-2 gap-y-0.5"> {/* Tighter wrapping for checkboxes */}
+            <div className="flex flex-wrap gap-x-2 gap-y-0.5"> 
               <label className="inline-flex items-center">
                 <input
                   type="checkbox"
                   checked={service.done}
                   onChange={() => handleEditServiceChange(category, index, 'done')}
-                  className="form-checkbox h-3.5 w-3.5 text-green-600 rounded focus:ring-green-500" // Smaller checkboxes
+                  className="form-checkbox h-3.5 w-3.5 text-green-600 rounded focus:ring-green-500" 
                 />
-                <span className="ml-0.5 text-gray-600">Done</span> {/* Smaller margin */}
+                <span className="ml-0.5 text-gray-600">Done</span> 
               </label>
               <label className="inline-flex items-center">
                 <input
@@ -504,7 +504,7 @@ function RecordsList({ appId, userId, db }) {
   return (
     <div className="relative">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">All Registered Vehicle Services</h2>
-      {/* New button for downloading all records */}
+      
       <button
         onClick={handleDownloadAllRecords}
         className="mb-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-200"
@@ -522,7 +522,7 @@ function RecordsList({ appId, userId, db }) {
               <th className="py-3 px-6 text-left">Gearbox</th>
               <th className="py-3 px-6 text-left">Motive Power</th>
               <th className="py-3 px-6 text-left">Drive Mode</th>
-              <th className="py-3 px-6 text-left min-w-[150px]">Brake Percentages</th> {/* NEW HEADER */}
+              <th className="py-3 px-6 text-left min-w-[150px]">Brake Percentages</th>
               <th className="py-3 px-6 text-left min-w-[250px]">Engine Services</th>
               <th className="py-3 px-6 text-left min-w-[250px]">Chassis Services</th>
               <th className="py-3 px-6 text-left">Registered On</th>
@@ -532,7 +532,7 @@ function RecordsList({ appId, userId, db }) {
           <tbody className="text-gray-700 text-sm font-light">
             {records.map((record) => (
               <tr key={record.id} className="border-b border-gray-200 hover:bg-gray-50">
-                {/* Registration Number */}
+                {/* Reg Num */}
                 <td className="py-3 px-6 text-left whitespace-nowrap">
                   {editingRecordId === record.id ? (
                     <input
@@ -655,7 +655,7 @@ function RecordsList({ appId, userId, db }) {
                     record.driveMode
                   )}
                 </td>
-                {/* NEW: Brake Percentages */}
+                {/* Brake Percentages */}
                 <td className="py-3 px-6 text-left">
                   {editingRecordId === record.id ? (
                     <div className="flex flex-col space-y-1 text-center">
