@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
+// Define the pre-set service types
 const serviceTypes = {
   engine: [
     'Oil change', 'Oil filter change', 'Air filter change', 'AC filter change',
@@ -17,7 +18,15 @@ const serviceTypes = {
   ]
 };
 
+/**
+ * Main application component for the Vehicle Inspection Report.
+ * @param {Object} props
+ * @param {string} props.appId The unique application ID for Firestore.
+ * @param {string} props.userId The user's unique ID from Firebase Auth.
+ * @param {Object} props.db The Firestore database instance.
+ */
 function RegistrationForm({ appId, userId, db }) {
+  // Initialize state for the form data
   const [formData, setFormData] = useState({
     regNumber: '',
     kilometers: '',
@@ -29,6 +38,8 @@ function RegistrationForm({ appId, userId, db }) {
     driveMode: '',
     engineServices: serviceTypes.engine.map(type => ({ type, done: false, urgent: false, later: false })),
     chassisServices: serviceTypes.chassis.map(type => ({ type, done: false, urgent: false, later: false })),
+    // Reverted state for the custom vehicle scanning service
+    vehicleScanning: [{ type: '', done: false, urgent: false, later: false }],
     brakePercentages: {
       frontLeft: '',
       frontRight: '',
@@ -36,9 +47,11 @@ function RegistrationForm({ appId, userId, db }) {
       rearRight: ''
     }
   });
+
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
 
+  // General handler for standard text/number inputs
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name.startsWith('brakePercentages.')) {
@@ -55,11 +68,13 @@ function RegistrationForm({ appId, userId, db }) {
     }
   };
 
+  // Handler for radio button changes
   const handleRadioChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Handler for pre-defined service and new scanning checkboxes
   const handleServiceChange = (category, index, field) => {
     setFormData(prev => {
       const updatedServices = [...prev[category]];
@@ -71,6 +86,20 @@ function RegistrationForm({ appId, userId, db }) {
     });
   };
 
+  // Handler for the text input in the new scanning section
+  const handleScanningTypeChange = (e) => {
+    const { value } = e.target;
+    setFormData(prev => {
+      const updatedScanning = [...prev.vehicleScanning];
+      updatedScanning[0] = {
+        ...updatedScanning[0],
+        type: value
+      };
+      return { ...prev, vehicleScanning: updatedScanning };
+    });
+  };
+
+  // Handles form submission, saves data to Firestore
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
@@ -90,6 +119,7 @@ function RegistrationForm({ appId, userId, db }) {
       });
       setMessage('Service registration successful! Document ID: ' + docRef.id);
       setMessageType('success');
+      // Reset form fields to their initial state
       setFormData({
         regNumber: '',
         kilometers: '',
@@ -101,6 +131,7 @@ function RegistrationForm({ appId, userId, db }) {
         driveMode: '',
         engineServices: serviceTypes.engine.map(type => ({ type, done: false, urgent: false, later: false })),
         chassisServices: serviceTypes.chassis.map(type => ({ type, done: false, urgent: false, later: false })),
+        vehicleScanning: [{ type: '', done: false, urgent: false, later: false }],
         brakePercentages: {
           frontLeft: '',
           frontRight: '',
@@ -115,6 +146,7 @@ function RegistrationForm({ appId, userId, db }) {
     }
   };
 
+  // Renders a table for a list of services (Engine or Chassis)
   const renderServiceTable = (category, services) => (
     <div className="mb-6">
       <h3 className="text-xl font-semibold text-gray-700 mb-3">{category === 'engineServices' ? 'Engine Services' : 'Chassis Services'}</h3>
@@ -168,12 +200,14 @@ function RegistrationForm({ appId, userId, db }) {
     <form onSubmit={handleSubmit} className="space-y-6 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
       <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Vehicle Inspection Report</h2>
 
+      {/* Message Box */}
       {message && (
         <div className={`p-3 rounded-lg text-white ${messageType === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
           {message}
         </div>
       )}
 
+      {/* Vehicle Information Fieldset */}
       <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
         <legend className="text-lg font-semibold text-gray-700 px-2">Vehicle Information</legend>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -240,6 +274,7 @@ function RegistrationForm({ appId, userId, db }) {
         </div>
       </fieldset>
 
+      {/* Gearbox Fieldset */}
       <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
         <legend className="text-lg font-semibold text-gray-700 px-2">Gearbox</legend>
         <div className="mt-4 flex flex-wrap gap-4">
@@ -270,6 +305,7 @@ function RegistrationForm({ appId, userId, db }) {
         </div>
       </fieldset>
 
+      {/* Motive Power Fieldset */}
       <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
         <legend className="text-lg font-semibold text-gray-700 px-2">Motive Power</legend>
         <div className="mt-4 flex flex-wrap gap-4">
@@ -348,6 +384,7 @@ function RegistrationForm({ appId, userId, db }) {
         </div>
       </fieldset>
 
+      {/* Drive Mode Fieldset */}
       <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
         <legend className="text-lg font-semibold text-gray-700 px-2">Drive Mode</legend>
         <div className="mt-4 flex flex-wrap gap-4">
@@ -390,32 +427,88 @@ function RegistrationForm({ appId, userId, db }) {
         </div>
       </fieldset>
 
+      {/* Service Tables for Engine and Chassis */}
       {renderServiceTable('engineServices', formData.engineServices)}
       {renderServiceTable('chassisServices', formData.chassisServices)}
 
-      {/* Brake */}
+      {/* New Vehicle Scanning Section */}
+      <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
+        <legend className="text-lg font-semibold text-gray-700 px-2">Vehicle Scanning</legend>
+        <div className="overflow-x-auto mt-4">
+          <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+            <thead>
+              <tr className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+                <th className="py-3 px-6 text-left">Scan Type</th>
+                <th className="py-3 px-6 text-center">Done</th>
+                <th className="py-3 px-6 text-center">Urgent</th>
+                <th className="py-3 px-6 text-center">Later</th>
+              </tr>
+            </thead>
+            <tbody className="text-gray-600 text-sm font-light">
+              <tr className="border-b border-gray-200 hover:bg-gray-50">
+                <td className="py-3 px-6 text-left whitespace-nowrap">
+                  <input
+                    type="text"
+                    name="scanningType"
+                    value={formData.vehicleScanning[0].type}
+                    onChange={handleScanningTypeChange}
+                    className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="Enter scan type..."
+                  />
+                </td>
+                <td className="py-3 px-6 text-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.vehicleScanning[0].done}
+                    onChange={() => handleServiceChange('vehicleScanning', 0, 'done')}
+                    className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                </td>
+                <td className="py-3 px-6 text-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.vehicleScanning[0].urgent}
+                    onChange={() => handleServiceChange('vehicleScanning', 0, 'urgent')}
+                    className="form-checkbox h-5 w-5 text-red-600 rounded focus:ring-red-500"
+                  />
+                </td>
+                <td className="py-3 px-6 text-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.vehicleScanning[0].later}
+                    onChange={() => handleServiceChange('vehicleScanning', 0, 'later')}
+                    className="form-checkbox h-5 w-5 text-yellow-600 rounded focus:ring-yellow-500"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </fieldset>
+
+      {/* Brake Percentages Fieldset */}
       <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
         <legend className="text-lg font-semibold text-gray-700 px-2">Brake Percentages</legend>
         <div className="overflow-x-auto mt-4">
           <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
             <thead>
               <tr className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
-                <th className="py-2 px-3 text-left"></th> 
-                <th className="py-2 px-3 text-center">Left</th> 
-                <th className="py-2 px-3 text-center">Right</th> 
+                <th className="py-2 px-3 text-left"></th>
+                <th className="py-2 px-3 text-center">Left</th>
+                <th className="py-2 px-3 text-center">Right</th>
               </tr>
             </thead>
             <tbody className="text-gray-600 text-sm font-light">
               <tr className="border-b border-gray-200 hover:bg-gray-50">
-                <td className="py-2 px-3 text-left whitespace-nowrap font-medium">Front</td> 
-                <td className="py-2 px-3 text-center"> 
+                <td className="py-2 px-3 text-left whitespace-nowrap font-medium">Front</td>
+                <td className="py-2 px-3 text-center">
                   <div className="flex items-center justify-center">
                     <input
                       type="number"
                       name="brakePercentages.frontLeft"
                       value={formData.brakePercentages.frontLeft}
                       onChange={handleChange}
-                      className="w-15 p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center text-sm" 
+                      className="w-15 p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
                       min="0"
                       max="100"
                       placeholder="%"
@@ -430,7 +523,7 @@ function RegistrationForm({ appId, userId, db }) {
                       name="brakePercentages.frontRight"
                       value={formData.brakePercentages.frontRight}
                       onChange={handleChange}
-                      className="w-15 p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center text-sm" 
+                      className="w-15 p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
                       min="0"
                       max="100"
                       placeholder="%"
@@ -440,7 +533,7 @@ function RegistrationForm({ appId, userId, db }) {
                 </td>
               </tr>
               <tr className="border-b border-gray-200 hover:bg-gray-50">
-                <td className="py-2 px-3 text-left whitespace-nowrap font-medium">Rear</td> 
+                <td className="py-2 px-3 text-left whitespace-nowrap font-medium">Rear</td>
                 <td className="py-2 px-3 text-center">
                   <div className="flex items-center justify-center">
                     <input
@@ -448,7 +541,7 @@ function RegistrationForm({ appId, userId, db }) {
                       name="brakePercentages.rearLeft"
                       value={formData.brakePercentages.rearLeft}
                       onChange={handleChange}
-                      className="w-15 p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center text-sm" 
+                      className="w-15 p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
                       min="0"
                       max="100"
                       placeholder="%"
@@ -456,14 +549,14 @@ function RegistrationForm({ appId, userId, db }) {
                     <span className="ml-1 text-gray-700 text-sm">%</span>
                   </div>
                 </td>
-                <td className="py-2 px-3 text-center"> 
+                <td className="py-2 px-3 text-center">
                   <div className="flex items-center justify-center">
                     <input
                       type="number"
                       name="brakePercentages.rearRight"
                       value={formData.brakePercentages.rearRight}
                       onChange={handleChange}
-                      className="w-15 p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center text-sm" 
+                      className="w-15 p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
                       min="0"
                       max="100"
                       placeholder="%"
@@ -477,6 +570,7 @@ function RegistrationForm({ appId, userId, db }) {
         </div>
       </fieldset>
 
+      {/* Submit Button */}
       <button
         type="submit"
         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105"

@@ -41,7 +41,6 @@ function RecordsList({ appId, userId, db }) {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedRecords = [];
       snapshot.forEach((doc) => {
-        
         const data = doc.data();
         fetchedRecords.push({
           id: doc.id,
@@ -73,8 +72,8 @@ function RecordsList({ appId, userId, db }) {
       ...record,
       engineServices: record.engineServices ? record.engineServices.map(s => ({ ...s })) : [],
       chassisServices: record.chassisServices ? record.chassisServices.map(s => ({ ...s })) : [],
-      
-      brakePercentages: { ...record.brakePercentages }
+      brakePercentages: { ...record.brakePercentages },
+      vehicleScanning: record.vehicleScanning ? [...record.vehicleScanning] : [{ type: '', done: false, urgent: false, later: false }]
     });
   };
 
@@ -112,6 +111,11 @@ function RecordsList({ appId, userId, db }) {
           [brakeField]: value
         }
       }));
+    } else if (name === 'vehicleScanning[0].type') {
+      setEditFormData(prev => ({
+        ...prev,
+        vehicleScanning: [{ ...prev.vehicleScanning[0], type: value }]
+      }));
     } else {
       setEditFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -119,11 +123,14 @@ function RecordsList({ appId, userId, db }) {
 
   const handleEditServiceChange = (category, index, field) => {
     setEditFormData(prev => {
-      const updatedServices = [...prev[category]];
-      updatedServices[index] = {
-        ...updatedServices[index],
-        [field]: !updatedServices[index][field]
-      };
+      const updatedServices = category === 'vehicleScanning' 
+        ? [{ ...prev.vehicleScanning[0], [field]: !prev.vehicleScanning[0][field] }]
+        : [...prev[category]];
+      if (index === 0 && category === 'vehicleScanning') {
+        updatedServices[0] = { ...updatedServices[0], [field]: !updatedServices[0][field] };
+      } else {
+        updatedServices[index] = { ...updatedServices[index], [field]: !updatedServices[index][field] };
+      }
       return { ...prev, [category]: updatedServices };
     });
   };
@@ -155,7 +162,7 @@ function RecordsList({ appId, userId, db }) {
     setRecordToDelete(null);
   };
 
-  // printing a single record with the A4
+  // Printing a single record with the A4
   const handlePrintRecord = (record) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -206,8 +213,6 @@ function RecordsList({ appId, userId, db }) {
               .checkbox-cell { text-align: center; width: 35px; } 
               .service-type { width: 140px; }
               .radio-option { display: inline-block; margin-right: 8px; } 
-
-              
               .checkbox-square {
                 width: 14px; 
                 height: 14px; 
@@ -225,8 +230,6 @@ function RecordsList({ appId, userId, db }) {
                 left: 50%;
                 transform: translate(-50%, -50%);
               }
-
-              /* Custom Radio Button Styling for Print using div with visible content */
               .radio-circle {
                   width: 14px; 
                   height: 14px; 
@@ -247,13 +250,11 @@ function RecordsList({ appId, userId, db }) {
                   transform: translate(-50%, -50%);
                   line-height: 1;
               }
-              
               .brake-percentage-cell {
                   text-align: right;
               }
+              .scanning-data-box { border: 1px solid #000; padding: 5px; min-height: 50px; }
 
-
-              
               @media print {
                   input[type="checkbox"], input[type="radio"] {
                       display: none;
@@ -298,7 +299,7 @@ function RecordsList({ appId, userId, db }) {
               </tr>
               <tr>
                   <td colspan="2">
-                      Motive Power:
+                      Motive Power: <br>
                       <label class="radio-option"><div class="radio-circle ${record.motivePower === 'Petrol' ? 'checked' : ''}"></div> Petrol</label>
                       <label class="radio-option"><div class="radio-circle ${record.motivePower === 'Diesel' ? 'checked' : ''}"></div> Diesel</label>
                       <label class="radio-option"><div class="radio-circle ${record.motivePower === 'Gas' ? 'checked' : ''}"></div> Gas</label>
@@ -307,12 +308,34 @@ function RecordsList({ appId, userId, db }) {
                       <label class="radio-option"><div class="radio-circle ${record.motivePower === 'HEV' ? 'checked' : ''}"></div> HEV</label>
                   </td>
                   <td colspan="2">
-                      Drive Mode:
+                      Drive Mode: <br>
                       <label class="radio-option"><div class="radio-circle ${record.driveMode === 'Rear' ? 'checked' : ''}"></div> Rear</label>
                       <label class="radio-option"><div class="radio-circle ${record.driveMode === 'Front' ? 'checked' : ''}"></div> Front</label>
                       <label class="radio-option"><div class="radio-circle ${record.driveMode === '4 x 4' ? 'checked' : ''}"></div> 4 x 4</label>
                   </td>
               </tr>
+          </table>
+
+          <div class="section-title">Vehicle Scanning Data</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th class="checkbox-cell">Done</th>
+                <th class="checkbox-cell">Urgent</th>
+                <th class="checkbox-cell">Later</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${record.vehicleScanning && record.vehicleScanning.length > 0 ? `
+                <tr>
+                  <td class="service-type">${record.vehicleScanning[0].type}</td>
+                  <td class="checkbox-cell"><div class="checkbox-square ${record.vehicleScanning[0].done ? 'checked' : ''}"></div></td>
+                  <td class="checkbox-cell"><div class="checkbox-square ${record.vehicleScanning[0].urgent ? 'checked' : ''}"></div></td>
+                  <td class="checkbox-cell"><div class="checkbox-square ${record.vehicleScanning[0].later ? 'checked' : ''}"></div></td>
+                </tr>
+              ` : '<tr><td colspan="4" class="scanning-data-box">N/A</td></tr>'}
+            </tbody>
           </table>
 
           <div class="flex-container">
@@ -332,7 +355,6 @@ function RecordsList({ appId, userId, db }) {
                       </tbody>
                   </table>
               </div>
-
               <div class="flex-item">
                   <div class="section-title">Chassis Services</div>
                   <table>
@@ -383,7 +405,7 @@ function RecordsList({ appId, userId, db }) {
     printWindow.print();
   };
 
-  // downloading all records as CSV
+  // Downloading all records as CSV
   const handleDownloadAllRecords = () => {
     if (records.length === 0) {
       alert("No records to download.");
@@ -394,7 +416,7 @@ function RecordsList({ appId, userId, db }) {
       "Reg Number", "Brand", "Model", "Year", "Kilometers", "Gearbox",
       "Motive Power", "Drive Mode",
       "Brake Front Left (%)", "Brake Front Right (%)", "Brake Rear Left (%)", "Brake Rear Right (%)",
-      "Engine Services", "Chassis Services", "Registered On"
+      "Engine Services", "Chassis Services", "Scanning Data", "Registered On"
     ];
 
     const csvRows = [];
@@ -428,6 +450,11 @@ function RecordsList({ appId, userId, db }) {
         record.brakePercentages.rearRight || '',
         formatServicesForCsv(record.engineServices),
         formatServicesForCsv(record.chassisServices),
+        `"${record.vehicleScanning && record.vehicleScanning.length > 0 ? `${record.vehicleScanning[0].type} (${[
+          record.vehicleScanning[0].done ? 'Done' : '',
+          record.vehicleScanning[0].urgent ? 'Urgent' : '',
+          record.vehicleScanning[0].later ? 'Later' : ''
+        ].filter(Boolean).join(', ') || 'Pending'})` : 'N/A'}"`,
         `"${record.timestamp?.toDate ? record.timestamp.toDate().toLocaleString() : 'N/A'}"`
       ];
       csvRows.push(row.join(','));
@@ -435,20 +462,21 @@ function RecordsList({ appId, userId, db }) {
 
     const csvString = csvRows.join('\n');
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', 'vehicle_service_records.csv');
+    link.href = url;
+    link.download = 'vehicle_service_records.csv';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url); // Clean up the URL object
   };
-
 
   // service checkboxes
   const renderEditServiceCheckboxes = (category, services) => (
     <div className="flex flex-col space-y-1 p-1 bg-gray-50 rounded-md text-xs"> 
       <h4 className="font-semibold text-gray-700 mb-1">
-        {category === 'engineServices' ? 'Engine Status:' : 'Chassis Status:'}
+        {category === 'engineServices' ? 'Engine Status:' : category === 'chassisServices' ? 'Chassis Status:' : 'Scanning Status:'}
       </h4>
       <div className="grid grid-cols-1 gap-x-2 gap-y-1"> 
         {services.map((service, index) => (
@@ -523,6 +551,7 @@ function RecordsList({ appId, userId, db }) {
               <th className="py-3 px-6 text-left">Motive Power</th>
               <th className="py-3 px-6 text-left">Drive Mode</th>
               <th className="py-3 px-6 text-left min-w-[150px]">Brake Percentages</th>
+              <th className="py-3 px-6 text-left min-w-[150px]">Scanning Data</th>
               <th className="py-3 px-6 text-left min-w-[250px]">Engine Services</th>
               <th className="py-3 px-6 text-left min-w-[250px]">Chassis Services</th>
               <th className="py-3 px-6 text-left">Registered On</th>
@@ -717,6 +746,24 @@ function RecordsList({ appId, userId, db }) {
                     </div>
                   )}
                 </td>
+                {/* Scanning Data */}
+                <td className="py-3 px-6 text-left">
+                  {editingRecordId === record.id ? (
+                    renderEditServiceCheckboxes('vehicleScanning', editFormData.vehicleScanning)
+                  ) : (
+                    <ul className="list-disc list-inside space-y-1">
+                      {record.vehicleScanning && record.vehicleScanning.length > 0 && (
+                        <li>
+                          {record.vehicleScanning[0].type}
+                          {record.vehicleScanning[0].done && <span className="text-green-600 ml-2">(Done)</span>}
+                          {record.vehicleScanning[0].urgent && <span className="text-red-600 ml-2">(Urgent)</span>}
+                          {record.vehicleScanning[0].later && <span className="text-yellow-600 ml-2">(Later)</span>}
+                        </li>
+                      )}
+                      {!record.vehicleScanning || record.vehicleScanning.length === 0 && <li>N/A</li>}
+                    </ul>
+                  )}
+                </td>
                 {/* Engine Services (now editable with checkboxes) */}
                 <td className="py-3 px-6 text-left">
                   {editingRecordId === record.id ? (
@@ -828,4 +875,4 @@ function RecordsList({ appId, userId, db }) {
   );
 }
 
-export default RecordsList;
+export default RecordsList; 
