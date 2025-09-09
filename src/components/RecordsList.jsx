@@ -425,7 +425,7 @@ function RecordsList({ appId, userId, db }) {
     printWindow.print();
   };
 
-  // Downloading all records as CSV
+  // Downloading all records as CSV (ALL data as columns)
   const handleDownloadAllRecords = () => {
     if (records.length === 0) {
       alert("No records to download.");
@@ -433,63 +433,99 @@ function RecordsList({ appId, userId, db }) {
     }
 
     const headers = [
-      "Reg Number", "Brand", "Model", "Year", "Kilometers", "Gearbox",
-      "Motive Power", "Drive Mode",
-      "Brake Front Left (%)", "Brake Front Right (%)", "Brake Rear Left (%)", "Brake Rear Right (%)",
-      "Engine Services", "Chassis Services", "Scanning Data", "Registered On"
+      "Document ID",
+      "User ID",
+      "Reg Number",
+      "Brand",
+      "Model",
+      "Year",
+      "Kilometers",
+      "Gearbox",
+      "Motive Power",
+      "Drive Mode",
+      "Brake Front Left (%)",
+      "Brake Front Right (%)",
+      "Brake Rear Left (%)",
+      "Brake Rear Right (%)",
+      "Scanning Type",
+      "Scanning Done",
+      "Scanning Urgent",
+      "Scanning Later",
+      "Engine Services",
+      "Chassis Services",
+      "Additional Information",
+      "Registered On"
     ];
 
-    const csvRows = [];
-    csvRows.push(headers.join(','));
+    const csvEscape = (v) => {
+      if (v === null || v === undefined) return '""';
+      const s = String(v).replace(/"/g, '""'); // escape double quotes
+      return `"${s}"`; // wrap every cell in quotes
+    };
 
-    records.forEach(record => {
-      const formatServicesForCsv = (services) => {
-        if (!services || services.length === 0) return '';
-        return services.map(s => {
-          let status = [];
+    const formatServicesForCsv = (services) => {
+      if (!services || services.length === 0) return '';
+      return services
+        .map((s) => {
+          const status = [];
           if (s.done) status.push('Done');
           if (s.urgent) status.push('Urgent');
           if (s.later) status.push('Later');
-          return `"${s.type} (${status.join(', ') || 'Pending'})"`;
-        }).join('; ');
+          return `${s.type} (${status.join(', ') || 'Pending'})`;
+        })
+        .join('; ');
+    };
+
+    const rows = records.map((record) => {
+      const scan = (record.vehicleScanning && record.vehicleScanning[0]) || {
+        type: '',
+        done: false,
+        urgent: false,
+        later: false,
       };
 
       const row = [
-        `"${record.regNumber}"`,
-        `"${record.brand}"`,
-        `"${record.model}"`,
-        record.year,
-        record.kilometers,
-        record.gearbox,
-        record.motivePower,
-        record.driveMode,
-        record.brakePercentages.frontLeft || '',
-        record.brakePercentages.frontRight || '',
-        record.brakePercentages.rearLeft || '',
-        record.brakePercentages.rearRight || '',
+        record.id || '',
+        record.userId || '',
+        record.regNumber || '',
+        record.brand || '',
+        record.model || '',
+        record.year ?? '',
+        record.kilometers ?? '',
+        record.gearbox || '',
+        record.motivePower || '',
+        record.driveMode || '',
+        record.brakePercentages?.frontLeft ?? '',
+        record.brakePercentages?.frontRight ?? '',
+        record.brakePercentages?.rearLeft ?? '',
+        record.brakePercentages?.rearRight ?? '',
+        scan.type || '',
+        scan.done ? 'Yes' : 'No',
+        scan.urgent ? 'Yes' : 'No',
+        scan.later ? 'Yes' : 'No',
         formatServicesForCsv(record.engineServices),
         formatServicesForCsv(record.chassisServices),
-        `"${record.vehicleScanning && record.vehicleScanning.length > 0 ? `${record.vehicleScanning[0].type} (${[
-          record.vehicleScanning[0].done ? 'Done' : '',
-          record.vehicleScanning[0].urgent ? 'Urgent' : '',
-          record.vehicleScanning[0].later ? 'Later' : ''
-        ].filter(Boolean).join(', ') || 'Pending'})` : 'N/A'}"`,
-        `"${record.timestamp?.toDate ? record.timestamp.toDate().toLocaleString() : 'N/A'}"`
+        record.additionalInfo || '',
+        record.timestamp?.toDate
+          ? record.timestamp.toDate().toLocaleString()
+          : record.timestamp || ''
       ];
-      csvRows.push(row.join(','));
+
+      return row.map(csvEscape).join(',');
     });
 
-    const csvString = csvRows.join('\n');
+    const csvString = [headers.map(csvEscape).join(','), ...rows].join('\n');
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'vehicle_service_records.csv';
+    link.download = 'vehicle_service_records_full.csv';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
+
 
   // ----- EDIT UI helpers -----
 
