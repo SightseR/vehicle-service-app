@@ -14,7 +14,11 @@ const serviceTypes = {
   chassis: [
     'Shock absorber replacement', 'Lower arm replacement', 'Rack end replacement',
     'Ball joint replacement', 'Front brake repair', 'Front brake replacement',
-    'Rear brake repair', 'Rear brake replacement'
+    'Rear brake repair', 'Rear brake replacement',
+    'Wheel bearing replacement - Front Left side',
+    'Wheel bearing replacement - Front right side',
+    'Wheel bearing replacement - Rear right side',
+    'Wheel bearing replacement - Rear left side'
   ]
 };
 
@@ -40,12 +44,14 @@ function RecordsList({ appId, userId, db }) {
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedRecords = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
         fetchedRecords.push({
-          id: doc.id,
+          id: docSnap.id,
           ...data,
-          brakePercentages: data.brakePercentages || { frontLeft: '', frontRight: '', rearLeft: '', rearRight: '' }
+          brakePercentages: data.brakePercentages || { frontLeft: '', frontRight: '', rearLeft: '', rearRight: '' },
+          vehicleScanning: Array.isArray(data.vehicleScanning) ? data.vehicleScanning : [{ type: '', done: false, urgent: false, later: false }],
+          additionalInfo: data.additionalInfo || ''
         });
       });
 
@@ -72,8 +78,11 @@ function RecordsList({ appId, userId, db }) {
       ...record,
       engineServices: record.engineServices ? record.engineServices.map(s => ({ ...s })) : [],
       chassisServices: record.chassisServices ? record.chassisServices.map(s => ({ ...s })) : [],
-      brakePercentages: { ...record.brakePercentages },
-      vehicleScanning: record.vehicleScanning ? [...record.vehicleScanning] : [{ type: '', done: false, urgent: false, later: false }]
+      brakePercentages: { ...(record.brakePercentages || {}) },
+      vehicleScanning: record.vehicleScanning && record.vehicleScanning.length
+        ? record.vehicleScanning.map(s => ({ ...s }))
+        : [{ type: '', done: false, urgent: false, later: false }],
+      additionalInfo: record.additionalInfo || ''
     });
   };
 
@@ -101,7 +110,7 @@ function RecordsList({ appId, userId, db }) {
 
   const handleEditFormChange = (e) => {
     const { name, value } = e.target;
-    
+
     if (name.startsWith('brakePercentages.')) {
       const brakeField = name.split('.')[1];
       setEditFormData(prev => ({
@@ -121,17 +130,13 @@ function RecordsList({ appId, userId, db }) {
     }
   };
 
+  // FIXED: simpler, no double-toggle special-case
   const handleEditServiceChange = (category, index, field) => {
     setEditFormData(prev => {
-      const updatedServices = category === 'vehicleScanning' 
-        ? [{ ...prev.vehicleScanning[0], [field]: !prev.vehicleScanning[0][field] }]
-        : [...prev[category]];
-      if (index === 0 && category === 'vehicleScanning') {
-        updatedServices[0] = { ...updatedServices[0], [field]: !updatedServices[0][field] };
-      } else {
-        updatedServices[index] = { ...updatedServices[index], [field]: !updatedServices[index][field] };
-      }
-      return { ...prev, [category]: updatedServices };
+      const list = Array.isArray(prev[category]) ? [...prev[category]] : [];
+      if (!list[index]) return prev;
+      list[index] = { ...list[index], [field]: !list[index][field] };
+      return { ...prev, [category]: list };
     });
   };
 
@@ -174,23 +179,25 @@ function RecordsList({ appId, userId, db }) {
       return timestamp?.toDate ? timestamp.toDate().toLocaleDateString() : 'N/A';
     };
 
-    const generateServiceRows = (allServiceTypes, recordServices, type) => {
+    const generateServiceRows = (_allServiceTypes, recordServices) => {
       let rows = '';
-      allServiceTypes[type].forEach(serviceType => {
-        const service = recordServices.find(s => s.type === serviceType);
+      const filtered = (recordServices || []).filter(s => s && (s.done || s.urgent || s.later));
+      filtered.forEach(service => {
         const doneChecked = service?.done ? 'checked' : '';
         const urgentChecked = service?.urgent ? 'checked' : '';
         const laterChecked = service?.later ? 'checked' : '';
-
         rows += `
           <tr>
-            <td class="service-type">${serviceType}</td>
+            <td class="service-type">${service.type}</td>
             <td class="checkbox-cell"><div class="checkbox-square ${doneChecked}"></div></td>
             <td class="checkbox-cell"><div class="checkbox-square ${urgentChecked}"></div></td>
             <td class="checkbox-cell"><div class="checkbox-square ${laterChecked}"></div></td>
           </tr>
         `;
       });
+      if (!rows.trim()) {
+        rows = '<tr><td colspan="4" class="scanning-data-box">No services marked Done/Urgent/Later.</td></tr>';
+      }
       return rows;
     };
 
@@ -250,15 +257,11 @@ function RecordsList({ appId, userId, db }) {
                   transform: translate(-50%, -50%);
                   line-height: 1;
               }
-              .brake-percentage-cell {
-                  text-align: right;
-              }
+              .brake-percentage-cell { text-align: right; }
               .scanning-data-box { border: 1px solid #000; padding: 5px; min-height: 50px; }
 
               @media print {
-                  input[type="checkbox"], input[type="radio"] {
-                      display: none;
-                  }
+                  input[type="checkbox"], input[type="radio"] { display: none; }
                   body { margin: 8mm; } 
                   @page { size: A4; margin: 8mm; } 
                   .header-title { margin-bottom: 8px; }
@@ -271,7 +274,7 @@ function RecordsList({ appId, userId, db }) {
       <body>
           <div style="overflow: hidden;">
               <div class="header-title" style="float: left; width: calc(100% - 110px);">Vehicle Inspection Report</div>
-              <div class="date-box">Date: ${formatDate(record.timestamp)}</div>
+              <div class="date-box">Printed: ${formatDate(record.timestamp)}</div>
           </div>
           <div style="clear: both;"></div>
 
@@ -395,6 +398,23 @@ function RecordsList({ appId, userId, db }) {
                   </tr>
               </tbody>
           </table>
+
+          <h3 class="section-title">Services Completed / Additional Information</h3>
+          <table class="info-table">
+              <tbody>
+                  <tr>
+                      <td>${record.additionalInfo ? record.additionalInfo.replace(/\\n/g, '<br>') : ''}</td>
+                  </tr>
+              </tbody>
+          </table>
+
+          <div style="margin-top: 20mm;">
+              <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+                  <span>Date: ____________________</span>
+                  <span>Signature: ______________________________</span>
+              </div>
+          </div>
+    
       </body>
       </html>
     `;
@@ -420,10 +440,9 @@ function RecordsList({ appId, userId, db }) {
     ];
 
     const csvRows = [];
-    csvRows.push(headers.join(',')); 
+    csvRows.push(headers.join(','));
 
     records.forEach(record => {
-      // for CSV
       const formatServicesForCsv = (services) => {
         if (!services || services.length === 0) return '';
         return services.map(s => {
@@ -431,12 +450,12 @@ function RecordsList({ appId, userId, db }) {
           if (s.done) status.push('Done');
           if (s.urgent) status.push('Urgent');
           if (s.later) status.push('Later');
-          return `"${s.type} (${status.join(', ') || 'Pending'})"`; 
-        }).join('; '); 
+          return `"${s.type} (${status.join(', ') || 'Pending'})"`;
+        }).join('; ');
       };
 
       const row = [
-        `"${record.regNumber}"`, 
+        `"${record.regNumber}"`,
         `"${record.brand}"`,
         `"${record.model}"`,
         record.year,
@@ -444,7 +463,7 @@ function RecordsList({ appId, userId, db }) {
         record.gearbox,
         record.motivePower,
         record.driveMode,
-        record.brakePercentages.frontLeft || '', 
+        record.brakePercentages.frontLeft || '',
         record.brakePercentages.frontRight || '',
         record.brakePercentages.rearLeft || '',
         record.brakePercentages.rearRight || '',
@@ -469,28 +488,45 @@ function RecordsList({ appId, userId, db }) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url); // Clean up the URL object
+    URL.revokeObjectURL(url);
   };
 
-  // service checkboxes
+  // ----- EDIT UI helpers -----
+
+  // service checkboxes (+ scanning type input when category is 'vehicleScanning')
   const renderEditServiceCheckboxes = (category, services) => (
-    <div className="flex flex-col space-y-1 p-1 bg-gray-50 rounded-md text-xs"> 
+    <div className="flex flex-col space-y-1 p-1 bg-gray-50 rounded-md text-xs">
       <h4 className="font-semibold text-gray-700 mb-1">
         {category === 'engineServices' ? 'Engine Status:' : category === 'chassisServices' ? 'Chassis Status:' : 'Scanning Status:'}
       </h4>
-      <div className="grid grid-cols-1 gap-x-2 gap-y-1"> 
+      <div className="grid grid-cols-1 gap-x-2 gap-y-1">
         {services.map((service, index) => (
           <div key={index} className="flex flex-col border-b border-gray-200 pb-1 mb-1 last:border-b-0 last:pb-0 last:mb-0">
-            <span className="font-medium text-gray-800 mb-0.5">{service.type}:</span>
-            <div className="flex flex-wrap gap-x-2 gap-y-0.5"> 
+            {category === 'vehicleScanning' && index === 0 ? (
+              <div className="mb-1">
+                <label className="block text-gray-700 text-xs font-medium mb-0.5">Type</label>
+                <input
+                  type="text"
+                  name={'vehicleScanning[0].type'}
+                  value={services[0]?.type || ''}
+                  onChange={handleEditFormChange}
+                  className="w-full p-1 border border-gray-300 rounded-md text-xs"
+                  placeholder="Enter scanning item (e.g., ABS, OBD scan)"
+                />
+              </div>
+            ) : (
+              <span className="font-medium text-gray-800 mb-0.5">{service.type}:</span>
+            )}
+
+            <div className="flex flex-wrap gap-x-2 gap-y-0.5">
               <label className="inline-flex items-center">
                 <input
                   type="checkbox"
                   checked={service.done}
                   onChange={() => handleEditServiceChange(category, index, 'done')}
-                  className="form-checkbox h-3.5 w-3.5 text-green-600 rounded focus:ring-green-500" 
+                  className="form-checkbox h-3.5 w-3.5 text-green-600 rounded focus:ring-green-500"
                 />
-                <span className="ml-0.5 text-gray-600">Done</span> 
+                <span className="ml-0.5 text-gray-600">Done</span>
               </label>
               <label className="inline-flex items-center">
                 <input
@@ -517,6 +553,8 @@ function RecordsList({ appId, userId, db }) {
     </div>
   );
 
+  // ----- RENDER -----
+
   if (loading) {
     return <div className="text-center text-gray-700 py-8">Loading records...</div>;
   }
@@ -532,13 +570,14 @@ function RecordsList({ appId, userId, db }) {
   return (
     <div className="relative">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">All Registered Vehicle Services</h2>
-      
+
       <button
         onClick={handleDownloadAllRecords}
         className="mb-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-200"
       >
         Download All Records (CSV)
       </button>
+
       <div className="overflow-x-auto rounded-lg shadow-md">
         <table className="min-w-full bg-white border border-gray-200">
           <thead>
@@ -552,12 +591,14 @@ function RecordsList({ appId, userId, db }) {
               <th className="py-3 px-6 text-left">Drive Mode</th>
               <th className="py-3 px-6 text-left min-w-[150px]">Brake Percentages</th>
               <th className="py-3 px-6 text-left min-w-[150px]">Scanning Data</th>
+              <th className="py-3 px-6 text-left min-w-[220px]">Services Completed / Additional Information</th>
               <th className="py-3 px-6 text-left min-w-[250px]">Engine Services</th>
               <th className="py-3 px-6 text-left min-w-[250px]">Chassis Services</th>
               <th className="py-3 px-6 text-left">Registered On</th>
               <th className="py-3 px-6 text-center">Actions</th>
             </tr>
           </thead>
+
           <tbody className="text-gray-700 text-sm font-light">
             {records.map((record) => (
               <tr key={record.id} className="border-b border-gray-200 hover:bg-gray-50">
@@ -575,6 +616,7 @@ function RecordsList({ appId, userId, db }) {
                     record.regNumber
                   )}
                 </td>
+
                 {/* Brand */}
                 <td className="py-3 px-6 text-left">
                   {editingRecordId === record.id ? (
@@ -589,6 +631,7 @@ function RecordsList({ appId, userId, db }) {
                     record.brand
                   )}
                 </td>
+
                 {/* Model (Year) */}
                 <td className="py-3 px-6 text-left">
                   {editingRecordId === record.id ? (
@@ -614,6 +657,7 @@ function RecordsList({ appId, userId, db }) {
                     `${record.model} (${record.year})`
                   )}
                 </td>
+
                 {/* Kilometers */}
                 <td className="py-3 px-6 text-left">
                   {editingRecordId === record.id ? (
@@ -628,6 +672,7 @@ function RecordsList({ appId, userId, db }) {
                     `${record.kilometers} km`
                   )}
                 </td>
+
                 {/* Gearbox */}
                 <td className="py-3 px-6 text-left">
                   {editingRecordId === record.id ? (
@@ -645,6 +690,7 @@ function RecordsList({ appId, userId, db }) {
                     record.gearbox
                   )}
                 </td>
+
                 {/* Motive Power */}
                 <td className="py-3 px-6 text-left">
                   {editingRecordId === record.id ? (
@@ -666,6 +712,7 @@ function RecordsList({ appId, userId, db }) {
                     record.motivePower
                   )}
                 </td>
+
                 {/* Drive Mode */}
                 <td className="py-3 px-6 text-left">
                   {editingRecordId === record.id ? (
@@ -684,6 +731,7 @@ function RecordsList({ appId, userId, db }) {
                     record.driveMode
                   )}
                 </td>
+
                 {/* Brake Percentages */}
                 <td className="py-3 px-6 text-left">
                   {editingRecordId === record.id ? (
@@ -746,6 +794,7 @@ function RecordsList({ appId, userId, db }) {
                     </div>
                   )}
                 </td>
+
                 {/* Scanning Data */}
                 <td className="py-3 px-6 text-left">
                   {editingRecordId === record.id ? (
@@ -760,11 +809,30 @@ function RecordsList({ appId, userId, db }) {
                           {record.vehicleScanning[0].later && <span className="text-yellow-600 ml-2">(Later)</span>}
                         </li>
                       )}
-                      {!record.vehicleScanning || record.vehicleScanning.length === 0 && <li>N/A</li>}
+                      {(!record.vehicleScanning || record.vehicleScanning.length === 0) && <li>N/A</li>}
                     </ul>
                   )}
                 </td>
-                {/* Engine Services (now editable with checkboxes) */}
+
+                {/* Additional Information */}
+                <td className="py-3 px-6 text-left">
+                  {editingRecordId === record.id ? (
+                    <textarea
+                      name="additionalInfo"
+                      value={editFormData.additionalInfo || ''}
+                      onChange={handleEditFormChange}
+                      rows={3}
+                      className="w-full p-2 border border-gray-300 rounded-md text-xs"
+                      placeholder="Add services completed or any extra notes"
+                    />
+                  ) : (
+                    <div className="text-xs whitespace-pre-line">
+                      {record.additionalInfo && record.additionalInfo.trim() !== '' ? record.additionalInfo : 'N/A'}
+                    </div>
+                  )}
+                </td>
+
+                {/* Engine Services */}
                 <td className="py-3 px-6 text-left">
                   {editingRecordId === record.id ? (
                     renderEditServiceCheckboxes('engineServices', editFormData.engineServices)
@@ -781,7 +849,8 @@ function RecordsList({ appId, userId, db }) {
                     </ul>
                   )}
                 </td>
-                {/* Chassis Services (now editable with checkboxes) */}
+
+                {/* Chassis Services */}
                 <td className="py-3 px-6 text-left">
                   {editingRecordId === record.id ? (
                     renderEditServiceCheckboxes('chassisServices', editFormData.chassisServices)
@@ -798,10 +867,12 @@ function RecordsList({ appId, userId, db }) {
                     </ul>
                   )}
                 </td>
+
                 {/* Registered On */}
                 <td className="py-3 px-6 text-left whitespace-nowrap">
                   {record.timestamp?.toDate ? record.timestamp.toDate().toLocaleString() : 'N/A'}
                 </td>
+
                 {/* Actions */}
                 <td className="py-3 px-6 text-center whitespace-nowrap">
                   {editingRecordId === record.id ? (
@@ -875,4 +946,4 @@ function RecordsList({ appId, userId, db }) {
   );
 }
 
-export default RecordsList; 
+export default RecordsList;

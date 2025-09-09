@@ -15,6 +15,8 @@ const serviceTypes = {
     'Shock absorber replacement', 'Lower arm replacement', 'Rack end replacement',
     'Ball joint replacement', 'Front brake repair', 'Front brake replacement',
     'Rear brake repair', 'Rear brake replacement'
+  ,
+    'Wheel bearing replacement - Front Left side', 'Wheel bearing replacement - Front right side', 'Wheel bearing replacement - Rear right side', 'Wheel bearing replacement - Rear left side'
   ]
 };
 
@@ -36,6 +38,7 @@ function RegistrationForm({ appId, userId, db }) {
     gearbox: '',
     motivePower: '',
     driveMode: '',
+    additionalInfo: '',
     engineServices: serviceTypes.engine.map(type => ({ type, done: false, urgent: false, later: false })),
     chassisServices: serviceTypes.chassis.map(type => ({ type, done: false, urgent: false, later: false })),
     // Reverted state for the custom vehicle scanning service
@@ -129,6 +132,7 @@ function RegistrationForm({ appId, userId, db }) {
         gearbox: '',
         motivePower: '',
         driveMode: '',
+        additionalInfo: '',
         engineServices: serviceTypes.engine.map(type => ({ type, done: false, urgent: false, later: false })),
         chassisServices: serviceTypes.chassis.map(type => ({ type, done: false, urgent: false, later: false })),
         vehicleScanning: [{ type: '', done: false, urgent: false, later: false }],
@@ -570,7 +574,20 @@ function RegistrationForm({ appId, userId, db }) {
         </div>
       </fieldset>
 
-      {/* Submit Button */}
+      
+      {/* Services Completed / Additional Information */}
+      <fieldset className="border border-gray-300 p-4 rounded-lg shadow-sm">
+        <legend className="text-lg font-semibold text-gray-700 px-2">Services Completed / Additional Information</legend>
+        <textarea
+          name="additionalInfo"
+          value={formData.additionalInfo}
+          onChange={handleChange}
+          className="mt-2 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Type any additional services performed or notes here..."
+          rows="4"
+        />
+      </fieldset>
+    {/* Submit Button */}
       <button
         type="submit"
         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
